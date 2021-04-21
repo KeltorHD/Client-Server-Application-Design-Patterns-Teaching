@@ -39,9 +39,9 @@ int main()
 		[](TCPServer::TCPClient& client)
 		{
 			std::string data{ client.get_data() };
-			Handler_server handler;
+			Handler_server handler;			
 
-			client.send_data(handler(data));
+			std::cout << "xml: " << data << std::endl;
 		}
 	);
 

@@ -1,5 +1,7 @@
 #include "tcpserver.hpp"
 
+#include <iostream>
+
 TCPServer::TCPServer(unsigned port, std::function<void(TCPClient&)> callback)
     :port(port), callback(callback)
 {
@@ -157,11 +159,42 @@ TCPServer::TCPClient::~TCPClient()
 
 const std::string& TCPServer::TCPClient::get_data(bool& err)
 {
-    char sReceiveBuffer[buf_size] = { 0 };
-    int nReaded = recv(S, sReceiveBuffer, buf_size - 1, 0);
+    char lenBuffer[5] = { 0 };
+    int nReaded = recv(S, lenBuffer, 5 - 1, 0);
+    std::cout << nReaded << std::endl;
     if (nReaded <= 0)
     {
         err = true;
+        return "";
+    }
+    else
+    {
+        err = false;
+    }
+
+    lenBuffer[nReaded] = 0;
+    // Отбрасываем символы превода строк
+    for (char* pPtr = lenBuffer; *pPtr != 0; pPtr++)
+    {
+        if (*pPtr == '\n' || *pPtr == '\r')
+        {
+            *pPtr = 0;
+            break;
+        }
+    }
+
+    /*получаем длину xml*/
+    int32_t length;
+    std::memcpy(&length, data.c_str(), 4);
+    if (length < 0) length = 0;
+
+    char* sReceiveBuffer = new char[length] {};
+    nReaded = recv(S, sReceiveBuffer, length - 1, 0);
+    std::cout << nReaded << std::endl;
+    if (nReaded <= 0)
+    {
+        err = true;
+        return "";
     }
     else
     {
@@ -180,6 +213,8 @@ const std::string& TCPServer::TCPClient::get_data(bool& err)
     }
 
     this->data = sReceiveBuffer;
+    delete[] sReceiveBuffer;
+
     return this->data;
 }
 
