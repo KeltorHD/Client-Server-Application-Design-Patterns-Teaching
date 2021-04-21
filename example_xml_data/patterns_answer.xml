@@ -1,0 +1,45 @@
+<!-- сначала отправляем количество байт, занимаемых xml -->
+
+<!-- ответ сервера с паттернами -->
+<?xml version="1.1" encoding="UTF-8"?>
+<body>
+	<count_pattern>2</count_pattern>
+	<pattern_list>
+		<pattern>
+			<name>Адаптер</name>
+			<description>Описание</description>
+			<code>Код</code>
+			<img>base64</img>
+			<count_test>1</count_test>
+			<test_list>
+				<test>
+					<question>Вопрос</question>
+					<id_description>Один из 4</id_description>
+					<a1>1</a1>
+					<a2>2</a2>
+					<a3>3</a3>
+					<a4>4</a4>
+					<correct_answer>1</correct_answer>
+				</test>
+			</test_list>
+		</pattern>
+		<pattern>
+			<name>Адаптер</name>
+			<description>Описание</description>
+			<code>Код</code>
+			<img>base64</img>
+			<count_test>1</count_test>
+			<test_list>
+				<test>
+					<question>Вопрос</question>
+					<id_description>Один из 4</id_description>
+					<a1>1</a1>
+					<a2>2</a2>
+					<a3>3</a3>
+					<a4>4</a4>
+					<correct_answer>1</correct_answer>
+				</test>
+			</test_list>
+		</pattern>
+	</pattern_list>
+</body>

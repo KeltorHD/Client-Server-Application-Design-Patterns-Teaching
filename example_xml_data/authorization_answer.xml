@@ -1,0 +1,8 @@
+<!-- сначала отправляем количество байт, занимаемых xml -->
+
+<!-- ответ сервера на авторизацию -->
+<?xml version="1.1" encoding="UTF-8"?>
+<body>
+	<answer>correct</answer>
+	<img>base64</img>
+</body>

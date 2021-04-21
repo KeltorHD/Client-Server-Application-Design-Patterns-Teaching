@@ -1,0 +1,15 @@
+<!-- сначала отправляем количество байт, занимаемых xml -->
+
+<!-- запрос пользователя на регистрацию -->
+<?xml version="1.1" encoding="UTF-8"?>
+<body>
+	<login>
+		admin
+	</login>
+	<passv>
+		admin
+	</passv>
+	<img>
+		base64
+	</img>
+</body>
