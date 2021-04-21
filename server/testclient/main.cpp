@@ -96,7 +96,7 @@ int main(int argc, char* argv[])
     //clean(recvbuf);
 
     //if (iResult > 0)
-    //    printf("Server welcome: %s\n", recvbuf);
+    //printf("Server welcome: %s\n", recvbuf);
 
     
     try
@@ -114,14 +114,9 @@ int main(int argc, char* argv[])
         /*send info*/
         int32_t var = xml.length();
         printf("%d\n", var);
-        char buf[5];
+        char buf[4];
         std::memcpy(buf, &var, 4);
-        buf[4] = '\0';
-
-        std::string xml_send{ buf };
-        xml_send += xml;
-
-        /*
+        
         iResult = send(ConnectSocket, buf, 4, 0);
         if (iResult == SOCKET_ERROR) {
             printf("send failed with error: %d\n", WSAGetLastError());
@@ -129,7 +124,7 @@ int main(int argc, char* argv[])
             WSACleanup();
             return 1;
         }
-        printf("Send \"info\", bytes Sent: %ld\n", iResult);*/
+        printf("Send \"info\", bytes Sent: %ld\n", iResult);
 
         iResult = send(ConnectSocket, xml.c_str(), xml.length(), 0);
         if (iResult == SOCKET_ERROR) {
