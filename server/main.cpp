@@ -1,14 +1,11 @@
 #include "tcpserver.hpp"
+#include "handler_server.h"
 
 #include <iostream>
 #include <string>
 #include <vector>
 #include <fstream>
 #include <iterator>
-
-#include "handler_server.h"
-
-
 
 int main()
 {
@@ -33,6 +30,7 @@ int main()
 		out << data[i];
 	}*/
 
+
 	TCPServer server
 	(
 		20002, 
@@ -41,11 +39,14 @@ int main()
 			std::string data{ client.get_data() };
 			Handler_server handler;			
 
-			std::cout << "xml: " << data << std::endl;
+			std::string recv{ handler.processing(data) };
+			std::cout << recv << std::endl;
+			client.send_data(recv);
 		}
 	);
 
 	server.start();
+
 
 	return 0;
 }

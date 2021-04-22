@@ -2,6 +2,7 @@
 
 <!-- запрос пользователя на авторизацию -->
 <?xml version="1.1" encoding="UTF-8"?>
+<type>authorization</type>
 <body>
 	<login>
 		admin

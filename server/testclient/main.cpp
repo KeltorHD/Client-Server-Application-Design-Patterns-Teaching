@@ -18,6 +18,7 @@
 #include <cstring>
 #include <string>
 #include <fstream>
+#include <iostream>
 
 // TCP-порт клиента
 
@@ -26,10 +27,8 @@
 
 void clean(char* src);
 
-int main(int argc, char* argv[])
+int main()
 {
-    if (argc != 2)
-        return 1;
 
     WSADATA wsaData;
     SOCKET ConnectSocket = INVALID_SOCKET;
@@ -98,25 +97,26 @@ int main(int argc, char* argv[])
     //if (iResult > 0)
     //printf("Server welcome: %s\n", recvbuf);
 
-    
+    std::cout << "DONE" << std::endl;
+
     try
     {
         /*send info*/
         std::string xml{};
-        std::ifstream file("patterns_answer.xml");
+        std::ifstream file("authorization.xml");
         std::string tmp;
         while (std::getline(file, tmp))
         {
             xml += tmp;
         }
-        printf("%s\n", xml.c_str());
+        std::cout << xml << std::endl;
 
         /*send info*/
         int32_t var = xml.length();
-        printf("%d\n", var);
+        var++;
         char buf[4];
         std::memcpy(buf, &var, 4);
-        
+
         iResult = send(ConnectSocket, buf, 4, 0);
         if (iResult == SOCKET_ERROR) {
             printf("send failed with error: %d\n", WSAGetLastError());
@@ -134,6 +134,12 @@ int main(int argc, char* argv[])
             return 1;
         }
         printf("Send \"info\", bytes Sent: %ld\n", iResult);
+
+        iResult = recv(ConnectSocket, recvbuf, recvbuflen, 0);
+        //clean(recvbuf);
+
+        if (iResult > 0)
+            printf("Server answer: %s\n", recvbuf);
     }
     catch (int& er)
     {

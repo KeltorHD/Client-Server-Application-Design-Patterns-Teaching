@@ -2,6 +2,7 @@
 
 <!-- клиент отправляем результат пройденного теста -->
 <?xml version="1.1" encoding="UTF-8"?>
+<type>result</type>
 <body>
 	<pattern>Адаптер</pattern>
 	<result>5</result>

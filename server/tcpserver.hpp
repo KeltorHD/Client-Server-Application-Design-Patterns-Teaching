@@ -17,8 +17,6 @@
 #include <vector>
 #include <algorithm>
 
-const int buf_size = 4096;
-
 class TCPServer
 {
 public:

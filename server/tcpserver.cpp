@@ -1,7 +1,5 @@
 #include "tcpserver.hpp"
 
-#include <iostream>
-
 TCPServer::TCPServer(unsigned port, std::function<void(TCPClient&)> callback)
     :port(port), callback(callback)
 {
@@ -113,19 +111,15 @@ void TCPServer::start()
 
 void TCPServer::client_loop(std::shared_ptr<TCPClient> client)
 {
-    while (true)
+    bool err;
+    std::string data;
+    data = client->get_data(err);
+
+    if (!err && data.length())
     {
-        bool err;
-        std::string data;
-        data = client->get_data(err);
-
-        if (err)
-            break;
-
-        if (data.length() == 0) continue;
-
         this->callback(*client);
     }
+
     // закрываем присоединенный сокет
     this->print_mutex.lock();
     printf("Client %s:%d disconnected.\n", inet_ntoa(client->cli_addr.sin_addr), ntohs(client->cli_addr.sin_port));
@@ -161,7 +155,6 @@ const std::string& TCPServer::TCPClient::get_data(bool& err)
 {
     char lenBuffer[5] = { 0 };
     int nReaded = recv(S, lenBuffer, 5 - 1, 0);
-    std::cout << "readed" << nReaded << std::endl;
     if (nReaded <= 0)
     {
         err = true;
@@ -186,12 +179,10 @@ const std::string& TCPServer::TCPClient::get_data(bool& err)
     /*получаем длину xml*/
     int32_t length;
     std::memcpy(&length, lenBuffer, 4);
-    std::cout << "int32_t: " << length << std::endl;
     if (length < 0) length = 0;
 
     char* sReceiveBuffer = new char[length] {};
     nReaded = recv(S, sReceiveBuffer, length - 1, 0);
-    std::cout <<"readed xml: " << nReaded << std::endl;
     if (nReaded <= 0)
     {
         err = true;

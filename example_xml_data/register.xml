@@ -2,6 +2,7 @@
 
 <!-- запрос пользователя на регистрацию -->
 <?xml version="1.1" encoding="UTF-8"?>
+<type>registration</type>
 <body>
 	<login>
 		admin

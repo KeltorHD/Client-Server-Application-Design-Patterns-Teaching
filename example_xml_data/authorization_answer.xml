@@ -5,4 +5,11 @@
 <body>
 	<answer>correct</answer>
 	<img>base64</img>
+	<count_test>1</count_test>
+	<tests>
+		<test>
+			<name>Адаптер</name>
+			<result>10</result>
+		</test>
+	</tests>
 </body>
