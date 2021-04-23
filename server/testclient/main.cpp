@@ -103,7 +103,7 @@ int main()
     {
         /*send info*/
         std::string xml{};
-        std::ifstream file("authorization.xml");
+        std::ifstream file("register.xml");
         std::string tmp;
         while (std::getline(file, tmp))
         {

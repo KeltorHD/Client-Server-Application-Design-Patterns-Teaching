@@ -144,12 +144,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="base64.cpp" />
     <ClCompile Include="handler_server.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="tcpserver.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="handler_server.h" />
+    <ClInclude Include="base64.hpp" />
+    <ClInclude Include="handler_server.hpp" />
     <ClInclude Include="tcpserver.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

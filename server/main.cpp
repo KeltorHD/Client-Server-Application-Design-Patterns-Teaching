@@ -1,5 +1,5 @@
 #include "tcpserver.hpp"
-#include "handler_server.h"
+#include "handler_server.hpp"
 
 #include <iostream>
 #include <string>
@@ -17,7 +17,6 @@ int main()
 	file.seekg(0, file.end);
 	size_t length = file.tellg();
 	file.seekg(0, file.beg);
-	uint8_t* buf = new uint8_t[length];
 
 	std::vector<uint8_t> data((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 
@@ -30,6 +29,18 @@ int main()
 		out << data[i];
 	}*/
 
+	/*std::ifstream file("user.png", std::ios::in | std::ios::binary);
+
+	if (!file.is_open())
+		throw std::exception("404 Not Found-f");
+
+	file.seekg(0, file.end);
+	size_t length = file.tellg();
+	file.seekg(0, file.beg);
+
+	std::vector<uint8_t> data((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+
+	std::cout << base64_encode(data) << std::endl;*/
 
 	TCPServer server
 	(
