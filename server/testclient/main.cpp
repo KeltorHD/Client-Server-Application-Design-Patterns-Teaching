@@ -29,6 +29,7 @@ void clean(char* src);
 
 int main()
 {
+    system("chcp 65001>nul");
 
     WSADATA wsaData;
     SOCKET ConnectSocket = INVALID_SOCKET;
@@ -36,7 +37,6 @@ int main()
         * ptr = NULL,
         hints;
     const char* sendbuf = "Hello, server!";
-    char recvbuf[DEFAULT_BUFLEN];
     int iResult;
     int recvbuflen = DEFAULT_BUFLEN;
 
@@ -103,7 +103,7 @@ int main()
     {
         /*send info*/
         std::string xml{};
-        std::ifstream file("register.xml");
+        std::ifstream file("patterns.xml");
         std::string tmp;
         while (std::getline(file, tmp))
         {
@@ -135,11 +135,23 @@ int main()
         }
         printf("Send \"info\", bytes Sent: %ld\n", iResult);
 
-        iResult = recv(ConnectSocket, recvbuf, recvbuflen, 0);
+        char len_buf[5] = { 0 };
+        iResult = recv(ConnectSocket, len_buf, 4, 0);
+        int32_t length;
+        std::memcpy(&length, len_buf, 4);
+        if (length < 0) length = 0;
+        if (iResult > 0)
+            printf("len anser: %d\n", length);
+
+        char* recvbuf = new char[length];
+
+        iResult = recv(ConnectSocket, recvbuf, length, 0);
         //clean(recvbuf);
 
         if (iResult > 0)
             printf("Server answer: %s\n", recvbuf);
+
+        delete[] recvbuf;
     }
     catch (int& er)
     {

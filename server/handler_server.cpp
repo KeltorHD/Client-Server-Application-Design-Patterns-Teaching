@@ -23,7 +23,7 @@ std::string Handler_server::processing(const std::string& data)
 		}
 		else if (type->GetText() == std::string("patterns"))
 		{
-
+			return this->patterns();
 		}
 		else if (type->GetText() == std::string("result"))
 		{
@@ -61,7 +61,11 @@ std::string Handler_server::auth(const std::string& login, const std::string& pa
 		body->InsertEndChild(answer);
 
 		tinyxml2::XMLElement* img = doc.NewElement("img");
-		img->SetText("base64");
+		SQLite::Statement path_query(db, "SELECT path_to_image FROM User WHERE login = '" + login + "'");
+		path_query.executeStep();
+		std::string path_to_file{ path_query.getColumn(0).getString() };
+
+		img->SetText(this->encode_file(path_to_file).c_str());
 		body->InsertEndChild(img);
 
 		SQLite::Statement c_test(db, "SELECT COUNT(*) FROM User_test WHERE id_user = ?");
@@ -117,7 +121,7 @@ std::string Handler_server::reg(const std::string& login, const std::string& pas
 	query.bind(1, login);
 	query.executeStep();
 	
-	if (query.getColumn(0).getInt() == 0) /*нет такого логина*/
+	if (query.getColumn(0).getInt() == 0) /*РЅРµС‚ С‚Р°РєРѕРіРѕ Р»РѕРіРёРЅР°*/
 	{
 		std::string path_to_file{ "images/users_images/" + login + "." + img_type };
 		std::ofstream tmp_file(path_to_file);
@@ -139,6 +143,115 @@ std::string Handler_server::reg(const std::string& login, const std::string& pas
 	{
 		return this->uncorrect();
 	}
+}
+
+std::string Handler_server::patterns()
+{
+	tinyxml2::XMLDocument doc;
+	tinyxml2::XMLDeclaration* decl = doc.NewDeclaration("xml version=\"1.1\" encoding=\"UTF-8\"");
+	doc.InsertEndChild(decl);
+	tinyxml2::XMLElement* body = doc.NewElement("body");
+
+	int counter = db.execAndGet("SELECT COUNT(*) FROM Pattern");
+	tinyxml2::XMLElement* counter_xml = doc.NewElement("count_pattern");
+	counter_xml->SetText(counter);
+	body->InsertEndChild(counter_xml);
+
+	tinyxml2::XMLElement* pattern_list_xml = doc.NewElement("pattern_list");
+
+	SQLite::Statement data(db, "SELECT * FROM Pattern");
+
+	while (data.executeStep())
+	{
+		tinyxml2::XMLElement* pattern_xml = doc.NewElement("pattern");
+
+		int id = data.getColumn(0).getInt();
+		const char* name = data.getColumn(1).getText();
+		const char* desc = data.getColumn(2).getText();
+		const char* code = data.getColumn(3).getText();
+		const char* path_to_image = data.getColumn(4).getText();
+
+		tinyxml2::XMLElement* name_xml = doc.NewElement("name");
+		name_xml->SetText(name);
+		pattern_xml->InsertEndChild(name_xml);
+
+		tinyxml2::XMLElement* desc_xml = doc.NewElement("description");
+		desc_xml->SetText(desc);
+		pattern_xml->InsertEndChild(desc_xml);
+
+		tinyxml2::XMLElement* code_xml = doc.NewElement("code");
+		code_xml->SetText(code);
+		pattern_xml->InsertEndChild(code_xml);
+
+		tinyxml2::XMLElement* img_xml = doc.NewElement("img");
+		img_xml->SetText(this->encode_file(path_to_image).c_str());
+		pattern_xml->InsertEndChild(img_xml);
+
+		tinyxml2::XMLElement* img_type_xml = doc.NewElement("img_type");
+		img_type_xml->SetText(this->delim(path_to_image, ".")[1].c_str());
+		pattern_xml->InsertEndChild(img_type_xml);
+		
+		tinyxml2::XMLElement* test_list_xml = doc.NewElement("test_list");
+
+		SQLite::Statement test_data(db, "SELECT * FROM Pattern_test WHERE id_pattern = " + std::to_string(id));
+		while (test_data.executeStep())
+		{
+			tinyxml2::XMLElement* test_xml = doc.NewElement("test");
+
+			const char* question = test_data.getColumn(1).getText();
+			int type = test_data.getColumn(2).getInt();
+
+			tinyxml2::XMLElement* question_xml = doc.NewElement("question");
+			question_xml->SetText(question);
+			test_xml->InsertEndChild(question_xml);
+
+			tinyxml2::XMLElement* type_xml = doc.NewElement("id_description");
+			type_xml->SetText(type);
+			test_xml->InsertEndChild(type_xml);
+
+			const char* correct_answer = test_data.getColumn(7).getText();
+
+			if (type == 1)
+			{
+				const char* a1 = test_data.getColumn(3).getText();
+				const char* a2 = test_data.getColumn(4).getText();
+				const char* a3 = test_data.getColumn(5).getText();
+				const char* a4 = test_data.getColumn(6).getText();
+
+				tinyxml2::XMLElement* a1_xml = doc.NewElement("a1");
+				a1_xml->SetText(a1);
+				test_xml->InsertEndChild(a1_xml);
+
+				tinyxml2::XMLElement* a2_xml = doc.NewElement("a2");
+				a2_xml->SetText(a2);
+				test_xml->InsertEndChild(a2_xml);
+
+				tinyxml2::XMLElement* a3_xml = doc.NewElement("a3");
+				a3_xml->SetText(a3);
+				test_xml->InsertEndChild(a3_xml);
+
+				tinyxml2::XMLElement* a4_xml = doc.NewElement("a4");
+				a4_xml->SetText(a4);
+				test_xml->InsertEndChild(a4_xml);
+			}
+
+			tinyxml2::XMLElement* correct_xml = doc.NewElement("correct_answer");
+			correct_xml->SetText(correct_answer);
+			test_xml->InsertEndChild(correct_xml);
+			test_list_xml->InsertEndChild(test_xml);
+		}
+
+		pattern_xml->InsertEndChild(test_list_xml);
+		pattern_list_xml->InsertEndChild(pattern_xml);
+	}
+
+	body->InsertEndChild(pattern_list_xml);
+	doc.InsertEndChild(body);
+
+	tinyxml2::XMLPrinter printer;
+	doc.Print(&printer);
+	
+	return printer.CStr();
 }
 
 bool Handler_server::is_correct_auth(const std::string& login, const std::string& password)
@@ -185,4 +298,36 @@ std::string Handler_server::correct()
 	tinyxml2::XMLPrinter printer;
 	doc.Print(&printer);
 	return printer.CStr();
+}
+
+std::vector<std::string> Handler_server::delim(std::string str, std::string delim)
+{
+	std::vector<std::string> arr;
+	size_t prev = 0;
+	size_t next;
+	size_t delta = delim.length();
+
+	while ((next = str.find(delim, prev)) != std::string::npos)
+	{
+		arr.push_back(str.substr(prev, next - prev));
+		prev = next + delta;
+	}
+
+	arr.push_back(str.substr(prev));
+
+	return arr;
+}
+
+std::string Handler_server::encode_file(const std::string& path)
+{
+	std::ifstream file(path, std::ios::in | std::ios::binary);
+	if (!file.is_open())
+		throw "not open file: " + path;
+	file.seekg(0, file.end);
+	size_t length = file.tellg();
+	file.seekg(0, file.beg);
+
+	std::vector<uint8_t> data((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+
+	return base64_encode(data);
 }

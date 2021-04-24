@@ -29,7 +29,7 @@ int main()
 		out << data[i];
 	}*/
 
-	/*std::ifstream file("user.png", std::ios::in | std::ios::binary);
+	/*std::ifstream file("images/users_images/user2.png", std::ios::in | std::ios::binary);
 
 	if (!file.is_open())
 		throw std::exception("404 Not Found-f");
@@ -51,7 +51,7 @@ int main()
 			Handler_server handler;			
 
 			std::string recv{ handler.processing(data) };
-			std::cout << recv << std::endl;
+			//std::cout << recv << std::endl;
 			client.send_data(recv);
 		}
 	);

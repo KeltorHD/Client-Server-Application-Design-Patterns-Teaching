@@ -10,11 +10,12 @@
 			<description>Описание</description>
 			<code>Код</code>
 			<img>base64</img>
+			<img_type>png</img_type>
 			<count_test>1</count_test>
 			<test_list>
 				<test>
 					<question>Вопрос</question>
-					<id_description>Один из 4</id_description>
+					<id_description>1</id_description>
 					<a1>1</a1>
 					<a2>2</a2>
 					<a3>3</a3>
@@ -28,11 +29,12 @@
 			<description>Описание</description>
 			<code>Код</code>
 			<img>base64</img>
+			<img_type>png</img_type>
 			<count_test>1</count_test>
 			<test_list>
 				<test>
 					<question>Вопрос</question>
-					<id_description>Один из 4</id_description>
+					<id_description>1</id_description>
 					<a1>1</a1>
 					<a2>2</a2>
 					<a3>3</a3>
