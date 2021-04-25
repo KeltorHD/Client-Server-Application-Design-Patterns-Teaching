@@ -4,10 +4,6 @@
 <?xml version="1.1" encoding="UTF-8"?>
 <type>authorization</type>
 <body>
-	<login>
-		admin
-	</login>
-	<passv>
-		admin
-	</passv>
+	<login>admin</login>
+	<password>admin</password>
 </body>

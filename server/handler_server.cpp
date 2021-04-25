@@ -1,44 +1,53 @@
 #include "handler_server.hpp"
 
-SQLite::Database db("main.db", SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
+SQLite::Database db("main.db", SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE); 
+std::mutex mutex;
 
 std::string Handler_server::processing(const std::string& data)
 {
-	tinyxml2::XMLDocument doc;
-	doc.Parse(data.c_str());
-
-	auto type = doc.FirstChildElement("type");
-	if (type)
+	try
 	{
-		if (type->GetText() == std::string("authorization"))
-		{
-			auto body = doc.FirstChildElement("body");
-			return this->auth(body->FirstChildElement("login")->GetText(), body->FirstChildElement("passv")->GetText());
-		}
-		else if (type->GetText() == std::string("registration"))
-		{
-			auto body = doc.FirstChildElement("body");
-			return this->reg(body->FirstChildElement("login")->GetText(), body->FirstChildElement("passv")->GetText(), 
-				body->FirstChildElement("img_type")->GetText(), body->FirstChildElement("img")->GetText());
-		}
-		else if (type->GetText() == std::string("patterns"))
-		{
-			return this->patterns();
-		}
-		else if (type->GetText() == std::string("result"))
-		{
+		tinyxml2::XMLDocument doc;
+		doc.Parse(data.c_str());
 
+		auto type = doc.FirstChildElement("type");
+		if (type)
+		{
+			auto body = doc.FirstChildElement("body");
+			if (type->GetText() == std::string("authorization"))
+			{
+				return this->auth(body->FirstChildElement("login")->GetText(), body->FirstChildElement("password")->GetText());
+			}
+			else if (type->GetText() == std::string("registration"))
+			{
+				return this->reg(body->FirstChildElement("login")->GetText(), body->FirstChildElement("password")->GetText(),
+					body->FirstChildElement("img_type")->GetText(), body->FirstChildElement("img")->GetText());
+			}
+			else if (type->GetText() == std::string("patterns"))
+			{
+				return this->patterns();
+			}
+			else if (type->GetText() == std::string("result"))
+			{
+				return this->result(body->FirstChildElement("login")->GetText(), body->FirstChildElement("password")->GetText(),
+					body->FirstChildElement("pattern")->GetText(), body->FirstChildElement("result")->GetText());
+			}
+			else
+			{
+				std::cout << "ERROR parse xml: " <<  " type " << type->GetText() << " not found" << std::endl;
+			}
 		}
 		else
 		{
-			std::cout << "ERROR parse xml" << std::endl;
+			std::cout << "ERROR parse xml: not found tag type" << std::endl;
 		}
+		return this->uncorrect();
 	}
-	else
+	catch (...)
 	{
-		std::cout << "not type" << std::endl;
+		std::cout << "ERROR parse xml: critical error" << std::endl;
+		return this->uncorrect();
 	}
-	return "";
 }
 
 std::string Handler_server::auth(const std::string& login, const std::string& password)
@@ -67,6 +76,10 @@ std::string Handler_server::auth(const std::string& login, const std::string& pa
 
 		img->SetText(this->encode_file(path_to_file).c_str());
 		body->InsertEndChild(img);
+
+		tinyxml2::XMLElement* img_type_xml = doc.NewElement("img_type");
+		img_type_xml->SetText(this->delim(path_to_file, ".")[1].c_str());
+		body->InsertEndChild(img_type_xml);
 
 		SQLite::Statement c_test(db, "SELECT COUNT(*) FROM User_test WHERE id_user = ?");
 		c_test.bind(1, id);
@@ -134,8 +147,10 @@ std::string Handler_server::reg(const std::string& login, const std::string& pas
 			file << data[i];
 		}
 		file.close();
-		
+
+		mutex.lock();
 		db.exec("INSERT INTO User (login, password, path_to_image) VALUES('" + login + "', '" + password + "', '" + path_to_file + "')");
+		mutex.unlock();
 
 		return this->correct();
 	}
@@ -252,6 +267,35 @@ std::string Handler_server::patterns()
 	doc.Print(&printer);
 	
 	return printer.CStr();
+}
+
+std::string Handler_server::result(const std::string& login, const std::string& password, const std::string& pattern, const std::string& result)
+{
+	if (this->is_correct_auth(login, password))
+	{
+		int id{ db.execAndGet("SELECT id FROM User WHERE login = '" + login + "'") };
+		int id_test{ db.execAndGet("SELECT id FROM Pattern WHERE name = '" + pattern + "'") };
+
+		if (!id && !id_test)
+			return this->uncorrect();
+
+		mutex.lock();
+		if ((int)db.execAndGet("SELECT COUNT(*) FROM User_test WHERE id_user = " + std::to_string(id) + " AND id_pattern = " + std::to_string(id_test)) == 0)
+		{
+			db.exec("INSERT INTO User_test (id_user, id_pattern, count_correct) VALUES(" + std::to_string(id) + ", " + std::to_string(id_test) + ", " + result + ")");
+		}
+		else
+		{
+			db.exec("UPDATE User_test SET count_correct = " + result + " WHERE id_user = " + std::to_string(id) + " AND id_pattern = " + std::to_string(id_test));
+		}
+		mutex.unlock();
+
+		return this->correct();
+	}
+	else
+	{
+		return this->uncorrect();
+	}
 }
 
 bool Handler_server::is_correct_auth(const std::string& login, const std::string& password)

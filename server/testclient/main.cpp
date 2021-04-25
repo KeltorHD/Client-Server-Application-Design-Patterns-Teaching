@@ -103,7 +103,7 @@ int main()
     {
         /*send info*/
         std::string xml{};
-        std::ifstream file("patterns.xml");
+        std::ifstream file("result_test.xml");
         std::string tmp;
         while (std::getline(file, tmp))
         {
@@ -143,13 +143,13 @@ int main()
         if (iResult > 0)
             printf("len anser: %d\n", length);
 
-        char* recvbuf = new char[length];
+        char* recvbuf = new char[length] {0};
 
         iResult = recv(ConnectSocket, recvbuf, length, 0);
         //clean(recvbuf);
 
         if (iResult > 0)
-            printf("Server answer: %s\n", recvbuf);
+            printf("Server answer:\n%s", recvbuf);
 
         delete[] recvbuf;
     }

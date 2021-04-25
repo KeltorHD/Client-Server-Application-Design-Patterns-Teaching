@@ -22,12 +22,11 @@ private:
 	std::string auth(const std::string& login, const std::string& password);
 	std::string reg(const std::string& login, const std::string& password, const std::string& img_type, const std::string& img);
 	std::string patterns();
+	std::string result(const std::string& login, const std::string& password, const std::string& pattern, const std::string& result);
 
 	bool is_correct_auth(const std::string& login, const std::string& password);
 	std::string uncorrect();
 	std::string correct();
 	std::string encode_file(const std::string& path);
 	std::vector<std::string> delim(std::string str, std::string delim);
-
-	static std::mutex mutex;
 };

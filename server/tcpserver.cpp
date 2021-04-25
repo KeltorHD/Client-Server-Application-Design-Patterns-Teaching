@@ -4,7 +4,11 @@ TCPServer::TCPServer(unsigned port, std::function<void(TCPClient&)> callback)
     :port(port), callback(callback)
 {
     // Инициализируем библиотеку сокетов
-    int tmp = WSAStartup(MAKEWORD(2, 2), &wsadata);
+    if (WSAStartup(MAKEWORD(2, 2), &wsadata) != 0)
+    {
+        printf("Error WSAStartup");
+        exit(1);
+    }
 
     // Пытаемся получить имя текущей машины
     char sName[128];
@@ -218,11 +222,11 @@ const std::string& TCPServer::TCPClient::get_data()
 
 void TCPServer::TCPClient::send_data(const std::string& text)
 {
-    int32_t length = text.length();
+    int32_t length = int32_t(text.length());
     length++;
     char buf[4];
     std::memcpy(buf, &length, 4);
     send(this->S, buf, 4, 0);
 
-    send(this->S, text.c_str(), text.length(), 0);
+    send(this->S, text.c_str(), int(text.length()), 0);
 }
