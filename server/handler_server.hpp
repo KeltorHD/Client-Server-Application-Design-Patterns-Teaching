@@ -19,14 +19,14 @@ public:
 	std::string processing(const std::string& data);
 
 private:
-	std::string auth(const std::string& login, const std::string& password);
+	std::string auth(const std::string& login, const std::string& password) const;
 	std::string reg(const std::string& login, const std::string& password, const std::string& img_type, const std::string& img);
-	std::string patterns();
+	std::string patterns() const;
 	std::string result(const std::string& login, const std::string& password, const std::string& pattern, const std::string& result);
 
-	bool is_correct_auth(const std::string& login, const std::string& password);
-	std::string uncorrect();
-	std::string correct();
-	std::string encode_file(const std::string& path);
-	std::vector<std::string> delim(std::string str, std::string delim);
+	bool is_correct_auth(const std::string& login, const std::string& password) const;
+	std::string uncorrect() const;
+	std::string correct() const;
+	std::string encode_file(const std::string& path) const;
+	std::vector<std::string> delim(const std::string& str, const std::string& delim) const;
 };

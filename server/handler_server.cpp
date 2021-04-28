@@ -50,7 +50,7 @@ std::string Handler_server::processing(const std::string& data)
 	}
 }
 
-std::string Handler_server::auth(const std::string& login, const std::string& password)
+std::string Handler_server::auth(const std::string& login, const std::string& password) const
 {
 	if (this->is_correct_auth(login, password))
 	{
@@ -160,7 +160,7 @@ std::string Handler_server::reg(const std::string& login, const std::string& pas
 	}
 }
 
-std::string Handler_server::patterns()
+std::string Handler_server::patterns() const
 {
 	tinyxml2::XMLDocument doc;
 	tinyxml2::XMLDeclaration* decl = doc.NewDeclaration("xml version=\"1.1\" encoding=\"UTF-8\"");
@@ -298,7 +298,7 @@ std::string Handler_server::result(const std::string& login, const std::string& 
 	}
 }
 
-bool Handler_server::is_correct_auth(const std::string& login, const std::string& password)
+bool Handler_server::is_correct_auth(const std::string& login, const std::string& password) const
 {
 	SQLite::Statement query(db, "SELECT COUNT(*) FROM User WHERE login = ? and password = ?");
 	query.bind(1, login);
@@ -308,7 +308,7 @@ bool Handler_server::is_correct_auth(const std::string& login, const std::string
 	return query.getColumn(0).getInt();
 }
 
-std::string Handler_server::uncorrect()
+std::string Handler_server::uncorrect() const
 {
 	tinyxml2::XMLDocument doc;
 	tinyxml2::XMLDeclaration* decl = doc.NewDeclaration("xml version=\"1.1\" encoding=\"UTF-8\"");
@@ -326,7 +326,7 @@ std::string Handler_server::uncorrect()
 	return printer.CStr();
 }
 
-std::string Handler_server::correct()
+std::string Handler_server::correct() const
 {
 	tinyxml2::XMLDocument doc;
 	tinyxml2::XMLDeclaration* decl = doc.NewDeclaration("xml version=\"1.1\" encoding=\"UTF-8\"");
@@ -344,7 +344,7 @@ std::string Handler_server::correct()
 	return printer.CStr();
 }
 
-std::vector<std::string> Handler_server::delim(std::string str, std::string delim)
+std::vector<std::string> Handler_server::delim(const std::string& str, const std::string& delim) const
 {
 	std::vector<std::string> arr;
 	size_t prev = 0;
@@ -362,7 +362,7 @@ std::vector<std::string> Handler_server::delim(std::string str, std::string deli
 	return arr;
 }
 
-std::string Handler_server::encode_file(const std::string& path)
+std::string Handler_server::encode_file(const std::string& path) const
 {
 	std::ifstream file(path, std::ios::in | std::ios::binary);
 	if (!file.is_open())

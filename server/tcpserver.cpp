@@ -157,12 +157,13 @@ TCPServer::TCPClient::~TCPClient()
 
 const std::string& TCPServer::TCPClient::get_data(bool& err)
 {
+    this->data = "";
     char lenBuffer[5] = { 0 };
     int nReaded = recv(S, lenBuffer, 5 - 1, 0);
     if (nReaded <= 0)
     {
         err = true;
-        return "";
+        return this->data;
     }
     else
     {
@@ -179,7 +180,7 @@ const std::string& TCPServer::TCPClient::get_data(bool& err)
     if (nReaded <= 0)
     {
         err = true;
-        return "";
+        return this->data;
     }
     else
     {
