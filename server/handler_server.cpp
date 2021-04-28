@@ -367,9 +367,6 @@ std::string Handler_server::encode_file(const std::string& path) const
 	std::ifstream file(path, std::ios::in | std::ios::binary);
 	if (!file.is_open())
 		throw "not open file: " + path;
-	file.seekg(0, file.end);
-	size_t length = file.tellg();
-	file.seekg(0, file.beg);
 
 	std::vector<uint8_t> data((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 

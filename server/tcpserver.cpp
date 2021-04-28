@@ -158,8 +158,8 @@ TCPServer::TCPClient::~TCPClient()
 const std::string& TCPServer::TCPClient::get_data(bool& err)
 {
     this->data = "";
-    char lenBuffer[5] = { 0 };
-    int nReaded = recv(S, lenBuffer, 5 - 1, 0);
+    char lenBuffer[sizeof(int32_t)] = { 0 };
+    int nReaded = recv(S, lenBuffer, sizeof(int32_t), 0);
     if (nReaded <= 0)
     {
         err = true;
@@ -172,7 +172,7 @@ const std::string& TCPServer::TCPClient::get_data(bool& err)
 
     /*получаем длину xml*/
     int32_t length;
-    std::memcpy(&length, lenBuffer, 4);
+    std::memcpy(&length, lenBuffer, sizeof(int32_t));
     if (length < 0) length = 0;
 
     char* sReceiveBuffer = new char[length] {};
@@ -189,15 +189,6 @@ const std::string& TCPServer::TCPClient::get_data(bool& err)
     if (nReaded < 0) nReaded = 0;
 
     sReceiveBuffer[nReaded] = 0;
-    // Отбрасываем символы превода строк
-    for (char* pPtr = sReceiveBuffer; *pPtr != 0; pPtr++)
-    {
-        if (*pPtr == '\n' || *pPtr == '\r')
-        {
-            *pPtr = 0;
-            break;
-        }
-    }
 
     this->data = sReceiveBuffer;
     delete[] sReceiveBuffer;
