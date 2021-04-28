@@ -169,17 +169,6 @@ const std::string& TCPServer::TCPClient::get_data(bool& err)
         err = false;
     }
 
-    lenBuffer[nReaded] = 0;
-    // Отбрасываем символы превода строк
-    for (char* pPtr = lenBuffer; *pPtr != 0; pPtr++)
-    {
-        if (*pPtr == '\n' || *pPtr == '\r')
-        {
-            *pPtr = 0;
-            break;
-        }
-    }
-
     /*получаем длину xml*/
     int32_t length;
     std::memcpy(&length, lenBuffer, 4);
