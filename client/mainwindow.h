@@ -8,6 +8,8 @@
 #include <QTcpSocket>
 #include <QFileDialog>
 #include <QtSql>
+#include <QPixmap>
+#include <QDir>
 
 #include <memory>
 #include <vector>
@@ -20,6 +22,19 @@
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
+
+struct user_info_t
+{
+    QString login;
+    QString password;
+    QString path_to_image;
+};
+
+struct result_test_t
+{
+    QString name;
+    QString result;
+};
 
 class MainWindow : public QMainWindow
 {
@@ -44,13 +59,20 @@ private slots:
 
     void on_reg_img_clicked();
 
+    void on_quit_clicked();
+
+    void on_to_result_test_clicked();
+
+    void on_to_personal_area_clicked();
+
 private:
     enum class screen
     {
         login = 0,
         registration = 1,
         personal_area = 2,
-        patterns = 3
+        patterns = 3,
+        result_test = 4
     };
     enum class type_forward
     {
@@ -60,6 +82,7 @@ private:
 
     Ui::MainWindow *ui;
     Popup *popup;
+    QPixmap pic;
     QSqlDatabase db;
     type_forward forward;
     QString base64_file;
@@ -74,6 +97,13 @@ private:
     void create_db();
 
     void fill_db_login(tinyxml2::XMLElement* body);
+    void fill_db_register();
+    void fill_personal_area();
+
     void save_img_to_file(const QString& path, const QString& img);
+
+    /*выборка из базы данных*/
+    user_info_t get_user_info();
+    std::vector<result_test_t> get_result_test_info();
 };
 #endif // MAINWINDOW_H

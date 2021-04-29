@@ -36,6 +36,8 @@ MainWindow::MainWindow(QWidget *parent)
         {
                qDebug() << this->db.lastError().text();
         }
+
+        this->fill_personal_area();
         this->ui->screen_stacked->setCurrentIndex((int)screen::personal_area);
     }
 }
@@ -98,6 +100,7 @@ void MainWindow::slotReadyRead()
                 this->ui->screen_stacked->setCurrentIndex((int)screen::personal_area);
                 this->create_db();
                 this->fill_db_login(doc.FirstChildElement("body"));
+                this->fill_personal_area();
             }
             else
             {
@@ -112,6 +115,11 @@ void MainWindow::slotReadyRead()
             {
                 this->ui->screen_stacked->setCurrentIndex((int)screen::personal_area);
                 this->create_db();
+                this->fill_db_register();
+                this->fill_personal_area();
+
+                this->base64_file = "";
+                this->file_type = "";
             }
             else
             {
@@ -200,7 +208,7 @@ void MainWindow::create_db()
                     "name VARCHAR(45) NOT NULL UNIQUE,      "
                     "description TEXT NOT NULL,             "
                     "code TEXT NOT NULL,                    "
-                    "path_to_image VARCHAR(45) NOT NULL);   ");
+                    "path_to_image VARCHAR(256) NOT NULL);  ");
     query.exec("CREATE TABLE Pattern_test (           "
                     "id_pattern INTEGER NOT NULL,           "
                     "question TEXT NOT NULL,                "
@@ -213,10 +221,10 @@ void MainWindow::create_db()
     query.exec("CREATE TABLE User (                              "
                     "login VARCHAR(45) NOT NULL UNIQUE,          "
                     "password VARCHAR(45) NOT NULL UNIQUE,       "
-                    "path_to_image VARCHAR(45) NOT NULL UNIQUE); " );
+                    "path_to_image VARCHAR(256) NOT NULL UNIQUE);" );
     query.exec("CREATE TABLE User_test (               "
                     "pattern VARCHAR(45) NOT NULL UNIQUE,      "
-                    "count_corrent INTEGER NOT NULL);           " );
+                    "count_corrent INTEGER NOT NULL);          " );
 }
 
 void MainWindow::fill_db_login(tinyxml2::XMLElement *body)
@@ -247,11 +255,23 @@ void MainWindow::fill_db_login(tinyxml2::XMLElement *body)
     }
 }
 
+void MainWindow::fill_db_register()
+{
+    QString login {this->ui->reg_login->text()};
+    QString password {this->ui->reg_pas->text()};
+    //qDebug() << "in reg: " + this->file_type;
+    QString path_to_image {QDir::currentPath() + "/images/user." + this->file_type};
+
+    this->save_img_to_file(path_to_image, this->base64_file);
+
+    QSqlQuery insert;
+    insert.exec("INSERT INTO User (login, password, path_to_image) VALUES ('" + login + "', '" + password + "', '" + path_to_image + "')");
+}
+
 void MainWindow::save_img_to_file(const QString &path, const QString &img)
 {
     std::ofstream tmp_file(path.toUtf8());
     tmp_file.close();
-    qDebug() << path;
 
     std::ofstream file(path.toUtf8(), std::ios::out | std::ios::binary);
     auto data{ base64_decode(img.toStdString()) };
@@ -260,6 +280,50 @@ void MainWindow::save_img_to_file(const QString &path, const QString &img)
         file << data[i];
     }
     file.close();
+}
+
+void MainWindow::fill_personal_area()
+{
+    user_info_t info{this->get_user_info()};
+
+    this->pic = QPixmap();
+    this->pic.load(info.path_to_image);
+
+    //this->pic = this->pic.scaled(QSize(256,256), Qt::AspectRatioMode(), Qt::SmoothTransformation);
+    this->ui->img_profile->setPixmap(this->pic);
+    this->ui->show_login->setText("Логин: " + info.login);
+}
+
+user_info_t MainWindow::get_user_info()
+{
+    QSqlQuery query;
+    query.exec("SELECT login, password, path_to_image FROM User");
+    QString login;
+    QString path_to_file;
+    QString password;
+    while (query.next())
+    {
+        login = query.value(0).toString();
+        password = query.value(1).toString();
+        path_to_file = query.value(2).toString();
+    }
+
+    return {login, password, path_to_file};
+}
+
+std::vector<result_test_t> MainWindow::get_result_test_info()
+{
+    std::vector<result_test_t> res;
+    QSqlQuery query;
+    query.exec("SELECT pattern, count_corrent FROM User_test");
+    while (query.next())
+    {
+        result_test_t tmp;
+        tmp.name = query.value(0).toString();
+        tmp.result = query.value(1).toString();
+        res.push_back(std::move(tmp));
+    }
+    return res;
 }
 
 void MainWindow::on_to_register_clicked()
@@ -309,12 +373,7 @@ void MainWindow::on_register_2_clicked()
     tinyxml2::XMLPrinter printer;
     doc.Print(&printer);
 
-    //qDebug() << printer.CStr();
-
     this->send(printer.CStr());
-
-    this->base64_file = "";
-    this->file_type = "";
 }
 
 void MainWindow::on_reg_img_clicked()
@@ -329,4 +388,35 @@ void MainWindow::on_reg_img_clicked()
 
     this->base64_file = base64_encode(data).c_str();
     this->file_type = fileName.split(".").back();
+}
+
+void MainWindow::on_quit_clicked()
+{
+    this->socket.reset(new QTcpSocket());
+    socket->connectToHost(this->host, this->port);
+    connect(socket.get(), SIGNAL(connected()), SLOT(slotConnected()));
+    connect(socket.get(), SIGNAL(readyRead()), SLOT(slotReadyRead()));
+    connect(socket.get(), SIGNAL(errorOccurred(QAbstractSocket::SocketError)), this,  SLOT(slotError(QAbstractSocket::SocketError)));
+
+    this->ui->screen_stacked->setCurrentIndex((int)screen::login);
+    this->forward = type_forward::login;
+
+    this->db.close();
+    QFile::remove(QDir::currentPath() + "/main.db");
+    QDir image_dir(QDir::currentPath() + "/images");
+    image_dir.removeRecursively();
+    QDir dir(QDir::currentPath());
+    dir.mkdir("images");
+    this->ui->login_2->setEnabled(false);
+    this->ui->register_2->setEnabled(false);
+}
+
+void MainWindow::on_to_result_test_clicked()
+{
+    this->ui->screen_stacked->setCurrentIndex((int)screen::result_test);
+}
+
+void MainWindow::on_to_personal_area_clicked()
+{
+    this->ui->screen_stacked->setCurrentIndex((int)screen::personal_area);
 }
