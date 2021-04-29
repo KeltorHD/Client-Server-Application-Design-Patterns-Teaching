@@ -98,6 +98,7 @@ std::string Handler_server::auth(const std::string& login, const std::string& pa
 
 			for (int i = 0; i < counter; i++)
 			{
+				tinyxml2::XMLElement* test = doc.NewElement("test");
 				res_tests.executeStep();
 
 				SQLite::Statement name(db, "SELECT name FROM Pattern WHERE id = ?");
@@ -106,11 +107,13 @@ std::string Handler_server::auth(const std::string& login, const std::string& pa
 
 				tinyxml2::XMLElement* xml_name = doc.NewElement("name");
 				xml_name->SetText(name.getColumn(0).getText());
-				tests->InsertEndChild(xml_name);
+				test->InsertEndChild(xml_name);
 
 				tinyxml2::XMLElement* result = doc.NewElement("result");
 				result->SetText(res_tests.getColumn(3).getText());
-				tests->InsertEndChild(result);
+				test->InsertEndChild(result);
+				
+				tests->InsertEndChild(test);
 			}
 
 			body->InsertEndChild(tests);
@@ -137,16 +140,7 @@ std::string Handler_server::reg(const std::string& login, const std::string& pas
 	if (query.getColumn(0).getInt() == 0) /*нет такого логина*/
 	{
 		std::string path_to_file{ "images/users_images/" + login + "." + img_type };
-		std::ofstream tmp_file(path_to_file);
-		tmp_file.close();
-
-		std::ofstream file(path_to_file, std::ios::out | std::ios::binary);
-		auto data{ base64_decode(img) };
-		for (size_t i = 0; i < data.size(); i++)
-		{
-			file << data[i];
-		}
-		file.close();
+		this->decode_file(path_to_file, img);
 
 		mutex.lock();
 		db.exec("INSERT INTO User (login, password, path_to_image) VALUES('" + login + "', '" + password + "', '" + path_to_file + "')");
@@ -371,4 +365,18 @@ std::string Handler_server::encode_file(const std::string& path) const
 	std::vector<uint8_t> data((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 
 	return base64_encode(data);
+}
+
+void Handler_server::decode_file(const std::string& path, const std::string& data)
+{
+	std::ofstream tmp_file(path);
+	tmp_file.close();
+
+	std::ofstream file(path, std::ios::out | std::ios::binary);
+	auto data{ base64_decode(data) };
+	for (size_t i = 0; i < data.size(); i++)
+	{
+		file << data[i];
+	}
+	file.close();
 }

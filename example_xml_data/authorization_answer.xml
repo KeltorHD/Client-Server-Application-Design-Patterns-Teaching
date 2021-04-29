@@ -5,6 +5,7 @@
 <body>
 	<answer>correct</answer>
 	<img>base64</img>
+	<img_type>png</img_type>
 	<count_test>1</count_test>
 	<tests>
 		<test>

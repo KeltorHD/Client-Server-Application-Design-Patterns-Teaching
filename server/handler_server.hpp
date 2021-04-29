@@ -28,5 +28,6 @@ private:
 	std::string uncorrect() const;
 	std::string correct() const;
 	std::string encode_file(const std::string& path) const;
+	void decode_file(const std::string& path, const std::string& data);
 	std::vector<std::string> delim(const std::string& str, const std::string& delim) const;
 };

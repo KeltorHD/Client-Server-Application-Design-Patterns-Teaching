@@ -14,7 +14,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     this->popup = new Popup(this);
 
-    if (!fileExists(QDir::currentPath() + "/account.txt"))
+    if (!fileExists(QDir::currentPath() + "/main.db"))
     {
         this->ui->screen_stacked->setCurrentIndex((int)screen::login);
         this->forward = type_forward::login;
@@ -27,6 +27,15 @@ MainWindow::MainWindow(QWidget *parent)
     }
     else
     {
+        this->db = QSqlDatabase::addDatabase("QSQLITE");
+
+
+        this->db.setDatabaseName(QDir::currentPath() + "/main.db");
+
+        if (!this->db.open())
+        {
+               qDebug() << this->db.lastError().text();
+        }
         this->ui->screen_stacked->setCurrentIndex((int)screen::personal_area);
     }
 }
@@ -77,7 +86,7 @@ void MainWindow::slotReadyRead()
         tinyxml2::XMLDocument doc;
         QString data = this->recv();
         doc.Parse(data.toUtf8());
-        //qDebug() << data;
+        qDebug() << data;
 
         switch (this->forward)
         {
@@ -87,6 +96,8 @@ void MainWindow::slotReadyRead()
             if (type->GetText() == QString("correct"))
             {
                 this->ui->screen_stacked->setCurrentIndex((int)screen::personal_area);
+                this->create_db();
+                this->fill_db_login(doc.FirstChildElement("body"));
             }
             else
             {
@@ -100,6 +111,7 @@ void MainWindow::slotReadyRead()
             if (type->GetText() == QString("correct"))
             {
                 this->ui->screen_stacked->setCurrentIndex((int)screen::personal_area);
+                this->create_db();
             }
             else
             {
@@ -171,6 +183,83 @@ QString MainWindow::recv()
     std::memcpy(&length, buf, sizeof(int32_t));
 
     return this->socket->readAll();
+}
+
+void MainWindow::create_db()
+{
+    this->db = QSqlDatabase::addDatabase("QSQLITE");
+    this->db.setDatabaseName(QDir::currentPath() + "/main.db");
+
+    if (!this->db.open())
+    {
+           qDebug() << this->db.lastError().text();
+    }
+    QSqlQuery query;
+    query.exec("CREATE TABLE Pattern (                      "
+                    "id INTEGER NOT NULL UNIQUE PRIMARY KEY,"
+                    "name VARCHAR(45) NOT NULL UNIQUE,      "
+                    "description TEXT NOT NULL,             "
+                    "code TEXT NOT NULL,                    "
+                    "path_to_image VARCHAR(45) NOT NULL);   ");
+    query.exec("CREATE TABLE Pattern_test (           "
+                    "id_pattern INTEGER NOT NULL,           "
+                    "question TEXT NOT NULL,                "
+                    "id_type INTEGER NOT NULL,              "
+                    "a1 VARCHAR(45) NOT NULL DEFAULT 'NULL',"
+                    "a2 VARCHAR(45) NOT NULL DEFAULT 'NULL',"
+                    "a3 VARCHAR(45) NOT NULL DEFAULT 'NULL',"
+                    "a4 VARCHAR(45) NOT NULL DEFAULT 'NULL',"
+                    "correct_answer VARCHAR(45) NOT NULL);  " );
+    query.exec("CREATE TABLE User (                              "
+                    "login VARCHAR(45) NOT NULL UNIQUE,          "
+                    "password VARCHAR(45) NOT NULL UNIQUE,       "
+                    "path_to_image VARCHAR(45) NOT NULL UNIQUE); " );
+    query.exec("CREATE TABLE User_test (               "
+                    "pattern VARCHAR(45) NOT NULL UNIQUE,      "
+                    "count_corrent INTEGER NOT NULL);           " );
+}
+
+void MainWindow::fill_db_login(tinyxml2::XMLElement *body)
+{
+    QString login {this->ui->login_lineEdit->text()};
+    QString password {this->ui->password_lineEdit->text()};
+    QString type_image {body->FirstChildElement("img_type")->GetText()};
+    QString path_to_image {QDir::currentPath() + "/images/user." + type_image};
+    this->base64_file = body->FirstChildElement("img")->GetText();
+    this->save_img_to_file(path_to_image, this->base64_file);
+
+    QSqlQuery insert;
+    insert.exec("INSERT INTO User (login, password, path_to_image) VALUES ('" + login + "', '" + password + "', '" + path_to_image + "')");
+    int length {body->FirstChildElement("count_test")->IntText()};
+    if (length > 0)
+    {
+        tinyxml2::XMLElement * tests = body->FirstChildElement("tests");
+        tinyxml2::XMLElement * test = tests->FirstChildElement("test");
+        while (test)
+        {
+            QString name {test->FirstChildElement("name")->GetText()};
+            QString result {test->FirstChildElement("result")->GetText()};
+
+            insert.exec("INSERT INTO User_test (pattern, count_corrent) VALUES ('" + name + "', " + result + ")");
+
+            test = test->NextSiblingElement("test");
+        }
+    }
+}
+
+void MainWindow::save_img_to_file(const QString &path, const QString &img)
+{
+    std::ofstream tmp_file(path.toUtf8());
+    tmp_file.close();
+    qDebug() << path;
+
+    std::ofstream file(path.toUtf8(), std::ios::out | std::ios::binary);
+    auto data{ base64_decode(img.toStdString()) };
+    for (size_t i = 0; i < data.size(); i++)
+    {
+        file << data[i];
+    }
+    file.close();
 }
 
 void MainWindow::on_to_register_clicked()

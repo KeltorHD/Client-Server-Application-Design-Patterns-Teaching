@@ -7,6 +7,7 @@
 #include <QDir>
 #include <QTcpSocket>
 #include <QFileDialog>
+#include <QtSql>
 
 #include <memory>
 #include <vector>
@@ -59,6 +60,7 @@ private:
 
     Ui::MainWindow *ui;
     Popup *popup;
+    QSqlDatabase db;
     type_forward forward;
     QString base64_file;
     QString file_type;
@@ -69,5 +71,9 @@ private:
 
     void send(const QString& data);
     QString recv();
+    void create_db();
+
+    void fill_db_login(tinyxml2::XMLElement* body);
+    void save_img_to_file(const QString& path, const QString& img);
 };
 #endif // MAINWINDOW_H
