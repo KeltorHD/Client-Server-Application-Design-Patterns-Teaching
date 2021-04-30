@@ -10,6 +10,9 @@
 #include <QtSql>
 #include <QPixmap>
 #include <QDir>
+#include <QLabel>
+#include <QWidget>
+#include <QVBoxLayout>
 
 #include <memory>
 #include <vector>
@@ -65,6 +68,8 @@ private slots:
 
     void on_to_personal_area_clicked();
 
+    void on_load_result_clicked();
+
 private:
     enum class screen
     {
@@ -77,7 +82,9 @@ private:
     enum class type_forward
     {
         login,
-        registration
+        registration,
+        load_result,   /*загрузка результатов тестов с сервера*/
+        upload_result, /*отгрузка данных с клиента на сервер*/
     };
 
     Ui::MainWindow *ui;
@@ -88,6 +95,9 @@ private:
     QString base64_file;
     QString file_type;
 
+    std::vector<QLabel*> results_test;
+    std::vector<QFrame*> lines;
+
     std::unique_ptr<QTcpSocket> socket;
     const QString host{"localhost"};
     const quint16 port{20002};
@@ -96,9 +106,14 @@ private:
     QString recv();
     void create_db();
 
+    void send_auth(const QString& login, const QString& password);
+
     void fill_db_login(tinyxml2::XMLElement* body);
     void fill_db_register();
     void fill_personal_area();
+    void fill_result_test(tinyxml2::XMLElement* body);
+
+    void fill_result_test_form();
 
     void save_img_to_file(const QString& path, const QString& img);
 

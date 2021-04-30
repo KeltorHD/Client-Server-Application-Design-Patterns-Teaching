@@ -38,6 +38,7 @@ MainWindow::MainWindow(QWidget *parent)
         }
 
         this->fill_personal_area();
+        this->fill_result_test_form();
         this->ui->screen_stacked->setCurrentIndex((int)screen::personal_area);
     }
 }
@@ -53,31 +54,7 @@ void MainWindow::on_login_2_clicked()
     if (!this->ui->login_lineEdit->text().size() || !this->ui->password_lineEdit->text().size())
         return;
 
-    tinyxml2::XMLDocument doc;
-    tinyxml2::XMLDeclaration* decl = doc.NewDeclaration("xml version=\"1.1\" encoding=\"UTF-8\"");
-    doc.InsertEndChild(decl);
-
-    tinyxml2::XMLElement* type = doc.NewElement("type");
-    type->SetText("authorization");
-    doc.InsertEndChild(type);
-
-    tinyxml2::XMLElement* body = doc.NewElement("body");
-    doc.InsertEndChild(body);
-
-    tinyxml2::XMLElement* login = doc.NewElement("login");
-    login->SetText(this->ui->login_lineEdit->text().toLocal8Bit().data());
-    body->InsertEndChild(login);
-
-    tinyxml2::XMLElement* password = doc.NewElement("password");
-    password->SetText(this->ui->password_lineEdit->text().toLocal8Bit().data());
-    body->InsertEndChild(password);
-
-    tinyxml2::XMLPrinter printer;
-    doc.Print(&printer);
-
-    qDebug() << printer.CStr();
-
-    this->send(printer.CStr());
+    this->send_auth(this->ui->login_lineEdit->text(), this->ui->password_lineEdit->text());
 }
 
 void MainWindow::slotReadyRead()
@@ -108,6 +85,7 @@ void MainWindow::slotReadyRead()
             }
             break;
         }
+
         case (type_forward::registration):
         {
             auto type = doc.FirstChildElement("body")->FirstChildElement("answer");
@@ -124,6 +102,21 @@ void MainWindow::slotReadyRead()
             else
             {
                 throw "Пользователь с таким логином уже существует!";
+            }
+            break;
+        }
+
+        case (type_forward::load_result):
+        {
+            auto type = doc.FirstChildElement("body")->FirstChildElement("answer");
+            if (type->GetText() == QString("correct"))
+            {
+                this->fill_result_test(doc.FirstChildElement("body"));
+                this->fill_result_test_form();
+            }
+            else
+            {
+                throw "Неверный логин или пароль!";
             }
             break;
         }
@@ -160,6 +153,7 @@ void MainWindow::slotError(QAbstractSocket::SocketError)
 
 void MainWindow::slotConnected()
 {
+    user_info_t info;
     qDebug() << "host connected";
     switch (this->forward)
     {
@@ -167,6 +161,11 @@ void MainWindow::slotConnected()
     case (type_forward::registration):
         this->ui->login_2->setEnabled(true);
         this->ui->register_2->setEnabled(true);
+        break;
+
+    case (type_forward::load_result):
+        info = this->get_user_info();
+        this->send_auth(info.login, info.password);
         break;
     }
 }
@@ -227,6 +226,33 @@ void MainWindow::create_db()
                     "count_corrent INTEGER NOT NULL);          " );
 }
 
+void MainWindow::send_auth(const QString &login, const QString &password)
+{
+    tinyxml2::XMLDocument doc;
+    tinyxml2::XMLDeclaration* decl = doc.NewDeclaration("xml version=\"1.1\" encoding=\"UTF-8\"");
+    doc.InsertEndChild(decl);
+
+    tinyxml2::XMLElement* type = doc.NewElement("type");
+    type->SetText("authorization");
+    doc.InsertEndChild(type);
+
+    tinyxml2::XMLElement* body = doc.NewElement("body");
+    doc.InsertEndChild(body);
+
+    tinyxml2::XMLElement* login_xml = doc.NewElement("login");
+    login_xml->SetText(login.toLocal8Bit().data());
+    body->InsertEndChild(login_xml);
+
+    tinyxml2::XMLElement* password_xml = doc.NewElement("password");
+    password_xml->SetText(password.toLocal8Bit().data());
+    body->InsertEndChild(password_xml);
+
+    tinyxml2::XMLPrinter printer;
+    doc.Print(&printer);
+
+    this->send(printer.CStr());
+}
+
 void MainWindow::fill_db_login(tinyxml2::XMLElement *body)
 {
     QString login {this->ui->login_lineEdit->text()};
@@ -236,23 +262,7 @@ void MainWindow::fill_db_login(tinyxml2::XMLElement *body)
     this->base64_file = body->FirstChildElement("img")->GetText();
     this->save_img_to_file(path_to_image, this->base64_file);
 
-    QSqlQuery insert;
-    insert.exec("INSERT INTO User (login, password, path_to_image) VALUES ('" + login + "', '" + password + "', '" + path_to_image + "')");
-    int length {body->FirstChildElement("count_test")->IntText()};
-    if (length > 0)
-    {
-        tinyxml2::XMLElement * tests = body->FirstChildElement("tests");
-        tinyxml2::XMLElement * test = tests->FirstChildElement("test");
-        while (test)
-        {
-            QString name {test->FirstChildElement("name")->GetText()};
-            QString result {test->FirstChildElement("result")->GetText()};
-
-            insert.exec("INSERT INTO User_test (pattern, count_corrent) VALUES ('" + name + "', " + result + ")");
-
-            test = test->NextSiblingElement("test");
-        }
-    }
+    this->fill_result_test(body);
 }
 
 void MainWindow::fill_db_register()
@@ -292,6 +302,64 @@ void MainWindow::fill_personal_area()
     //this->pic = this->pic.scaled(QSize(256,256), Qt::AspectRatioMode(), Qt::SmoothTransformation);
     this->ui->img_profile->setPixmap(this->pic);
     this->ui->show_login->setText("Логин: " + info.login);
+}
+
+void MainWindow::fill_result_test(tinyxml2::XMLElement *body)
+{
+    QSqlQuery insert;
+    insert.exec("DELETE FROM User_test");
+    int length {body->FirstChildElement("count_test")->IntText()};
+    if (length > 0)
+    {
+        tinyxml2::XMLElement * tests = body->FirstChildElement("tests");
+        tinyxml2::XMLElement * test = tests->FirstChildElement("test");
+        while (test)
+        {
+            QString name {test->FirstChildElement("name")->GetText()};
+            QString result {test->FirstChildElement("result")->GetText()};
+
+            insert.exec("INSERT INTO User_test (pattern, count_corrent) VALUES ('" + name + "', " + result + ")");
+
+            test = test->NextSiblingElement("test");
+        }
+    }
+}
+
+void MainWindow::fill_result_test_form()
+{
+    auto data {this->get_result_test_info()};
+
+    /*clear*/
+    size_t i = 0;
+    for (size_t i = 0; i < results_test.size(); i++)
+    {
+        delete this->results_test[i];
+        if (int(i) != int(results_test.size()) - 1)
+        {
+            delete this->lines[i];
+        }
+    }
+    this->results_test.clear();
+    this->lines.clear();
+
+    /*results*/
+    i = 0;
+    this->ui->result_layout->setSizeConstraint(QLayout::SetMinimumSize);
+    for (i = 0; i < data.size(); i++)
+    {
+        this->results_test.push_back(new QLabel(this));
+        this->results_test[i]->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+        this->results_test[i]->setWordWrap(true);
+        this->results_test[i]->setText(data[i].name + ": " + data[i].result + "/10");
+        this->ui->result_layout->addWidget(this->results_test[i]);
+
+        if (int(i) != int(data.size()) - 1)
+        {
+            this->lines.push_back(new QFrame());
+            this->lines[i]->setFrameShape(QFrame::HLine);
+            this->ui->result_layout->addWidget(this->lines[i]);
+        }
+    }
 }
 
 user_info_t MainWindow::get_user_info()
@@ -419,4 +487,15 @@ void MainWindow::on_to_result_test_clicked()
 void MainWindow::on_to_personal_area_clicked()
 {
     this->ui->screen_stacked->setCurrentIndex((int)screen::personal_area);
+}
+
+void MainWindow::on_load_result_clicked()
+{
+    this->forward = type_forward::load_result;
+
+    this->socket.reset(new QTcpSocket());
+    socket->connectToHost(this->host, this->port);
+    connect(socket.get(), SIGNAL(connected()), SLOT(slotConnected()));
+    connect(socket.get(), SIGNAL(readyRead()), SLOT(slotReadyRead()));
+    connect(socket.get(), SIGNAL(errorOccurred(QAbstractSocket::SocketError)), this,  SLOT(slotError(QAbstractSocket::SocketError)));
 }
