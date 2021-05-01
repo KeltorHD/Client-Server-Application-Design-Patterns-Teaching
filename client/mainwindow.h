@@ -70,6 +70,8 @@ private slots:
 
     void on_load_result_clicked();
 
+    void on_upload_result_clicked();
+
 private:
     enum class screen
     {
@@ -107,6 +109,7 @@ private:
     void create_db();
 
     void send_auth(const QString& login, const QString& password);
+    void send_test_result(const QString& login, const QString& password);
 
     void fill_db_login(tinyxml2::XMLElement* body);
     void fill_db_register();

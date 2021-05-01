@@ -1,0 +1,16 @@
+<!-- сначала отправляем количество байт, занимаемых xml -->
+
+<!-- Клиент отсылает результаты своих тестов -->
+<?xml version="1.1" encoding="UTF-8"?>
+<type>set_all_result</type>
+<body>
+	<login>login</login>
+	<password>password</password>
+	<count_test>1</count_test>
+	<tests>
+		<test>
+			<name>Адаптер</name>
+			<result>10</result>
+		</test>
+	</tests>
+</body>

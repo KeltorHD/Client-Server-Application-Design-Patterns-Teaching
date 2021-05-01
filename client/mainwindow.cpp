@@ -120,7 +120,22 @@ void MainWindow::slotReadyRead()
             }
             break;
         }
+
+        case (type_forward::upload_result):
+        {
+            auto type = doc.FirstChildElement("body")->FirstChildElement("answer");
+            if (type->GetText() == QString("correct"))
+            {
+                qDebug() << "Загружено на сервер!";
+            }
+            else
+            {
+                throw "Неверный логин или пароль!";
+            }
+            break;
         }
+        }
+
 
         this->socket->close();
     }
@@ -166,6 +181,11 @@ void MainWindow::slotConnected()
     case (type_forward::load_result):
         info = this->get_user_info();
         this->send_auth(info.login, info.password);
+        break;
+
+    case (type_forward::upload_result):
+        info = this->get_user_info();
+        this->send_test_result(info.login, info.password);
         break;
     }
 }
@@ -249,6 +269,67 @@ void MainWindow::send_auth(const QString &login, const QString &password)
 
     tinyxml2::XMLPrinter printer;
     doc.Print(&printer);
+
+    this->send(printer.CStr());
+}
+
+void MainWindow::send_test_result(const QString &login, const QString &password)
+{
+    tinyxml2::XMLDocument doc;
+    tinyxml2::XMLDeclaration* decl = doc.NewDeclaration("xml version=\"1.1\" encoding=\"UTF-8\"");
+    doc.InsertEndChild(decl);
+
+    tinyxml2::XMLElement* type = doc.NewElement("type");
+    type->SetText("set_all_result");
+    doc.InsertEndChild(type);
+
+    tinyxml2::XMLElement* body = doc.NewElement("body");
+    doc.InsertEndChild(body);
+
+    tinyxml2::XMLElement* login_xml = doc.NewElement("login");
+    login_xml->SetText(login.toLocal8Bit().data());
+    body->InsertEndChild(login_xml);
+
+    tinyxml2::XMLElement* password_xml = doc.NewElement("password");
+    password_xml->SetText(password.toLocal8Bit().data());
+    body->InsertEndChild(password_xml);
+
+    int counter{ 0 };
+    QSqlQuery query("SELECT COUNT(*) FROM User_test");
+    if (query.next())
+        counter = query.value(0).toInt();
+    tinyxml2::XMLElement* count_test = doc.NewElement("count_test");
+    count_test->SetText(counter);
+    body->InsertEndChild(count_test);
+
+    if (counter)
+    {
+        tinyxml2::XMLElement* tests = doc.NewElement("tests");
+
+        QSqlQuery res_tests("SELECT * FROM User_test");
+
+        while (res_tests.next())
+        {
+            tinyxml2::XMLElement* test = doc.NewElement("test");
+
+            tinyxml2::XMLElement* xml_name = doc.NewElement("name");
+            xml_name->SetText(res_tests.value(0).toString().toUtf8().data());
+            test->InsertEndChild(xml_name);
+
+            tinyxml2::XMLElement* result = doc.NewElement("result");
+            result->SetText(res_tests.value(1).toString().toUtf8().data());
+            test->InsertEndChild(result);
+
+            tests->InsertEndChild(test);
+        }
+
+        body->InsertEndChild(tests);
+    }
+
+    tinyxml2::XMLPrinter printer;
+    doc.Print(&printer);
+
+    qDebug() << printer.CStr();
 
     this->send(printer.CStr());
 }
@@ -492,6 +573,17 @@ void MainWindow::on_to_personal_area_clicked()
 void MainWindow::on_load_result_clicked()
 {
     this->forward = type_forward::load_result;
+
+    this->socket.reset(new QTcpSocket());
+    socket->connectToHost(this->host, this->port);
+    connect(socket.get(), SIGNAL(connected()), SLOT(slotConnected()));
+    connect(socket.get(), SIGNAL(readyRead()), SLOT(slotReadyRead()));
+    connect(socket.get(), SIGNAL(errorOccurred(QAbstractSocket::SocketError)), this,  SLOT(slotError(QAbstractSocket::SocketError)));
+}
+
+void MainWindow::on_upload_result_clicked()
+{
+    this->forward = type_forward::upload_result;
 
     this->socket.reset(new QTcpSocket());
     socket->connectToHost(this->host, this->port);

@@ -32,6 +32,10 @@ std::string Handler_server::processing(const std::string& data)
 				return this->result(body->FirstChildElement("login")->GetText(), body->FirstChildElement("password")->GetText(),
 					body->FirstChildElement("pattern")->GetText(), body->FirstChildElement("result")->GetText());
 			}
+			else if (type->GetText() == std::string("set_all_result"))
+			{
+				return this->set_all_result(body->FirstChildElement("login")->GetText(), body->FirstChildElement("password")->GetText(), body);
+			}
 			else
 			{
 				std::cout << "ERROR parse xml: " <<  " type " << type->GetText() << " not found" << std::endl;
@@ -292,6 +296,40 @@ std::string Handler_server::result(const std::string& login, const std::string& 
 	}
 }
 
+std::string Handler_server::set_all_result(const std::string& login, const std::string& password, tinyxml2::XMLElement* body)
+{
+	if (this->is_correct_auth(login, password))
+	{
+		int user_id{ db.execAndGet("SELECT id FROM User WHERE login = '" + login + "'") };
+
+		db.exec("DELETE FROM User_test WHERE id_user = " + std::to_string(user_id));
+
+		int length{ body->FirstChildElement("count_test")->IntText() };
+		if (length > 0)
+		{
+			tinyxml2::XMLElement* tests = body->FirstChildElement("tests");
+			tinyxml2::XMLElement* test = tests->FirstChildElement("test");
+			while (test)
+			{
+				std::string name{ test->FirstChildElement("name")->GetText() };
+				std::string result{ test->FirstChildElement("result")->GetText() };
+
+				int pattern_id{ db.execAndGet("SELECT id FROM Pattern WHERE name = '" + name + "'") };
+
+				db.exec("INSERT INTO User_test (id_user, id_pattern, count_correct) VALUES (" + std::to_string(user_id) + ", " + std::to_string(pattern_id) + ", " + result + ")");
+
+				test = test->NextSiblingElement("test");
+			}
+		}
+
+		return this->correct();
+	}
+	else
+	{
+		return this->uncorrect();
+	}
+}
+
 bool Handler_server::is_correct_auth(const std::string& login, const std::string& password) const
 {
 	SQLite::Statement query(db, "SELECT COUNT(*) FROM User WHERE login = ? and password = ?");
@@ -373,10 +411,10 @@ void Handler_server::decode_file(const std::string& path, const std::string& dat
 	tmp_file.close();
 
 	std::ofstream file(path, std::ios::out | std::ios::binary);
-	auto data{ base64_decode(data) };
-	for (size_t i = 0; i < data.size(); i++)
+	auto data_file{ base64_decode(data) };
+	for (size_t i = 0; i < data_file.size(); i++)
 	{
-		file << data[i];
+		file << data_file[i];
 	}
 	file.close();
 }
