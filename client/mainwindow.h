@@ -13,6 +13,8 @@
 #include <QLabel>
 #include <QWidget>
 #include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QPushButton>
 
 #include <memory>
 #include <vector>
@@ -72,6 +74,12 @@ private slots:
 
     void on_upload_result_clicked();
 
+    void on_to_patterns_clicked();
+
+    void on_to_personal_area_2_clicked();
+
+    void on_update_patterns_clicked();
+
 private:
     enum class screen
     {
@@ -87,6 +95,7 @@ private:
         registration,
         load_result,   /*загрузка результатов тестов с сервера*/
         upload_result, /*отгрузка данных с клиента на сервер*/
+        load_patterns  /*загрузка доступных паттернов с сайта*/
     };
 
     Ui::MainWindow *ui;
@@ -97,8 +106,15 @@ private:
     QString base64_file;
     QString file_type;
 
-    std::vector<QLabel*> results_test;
-    std::vector<QFrame*> lines;
+    /*для результатов тестов*/
+    std::vector<QLabel*> label_test;
+    std::vector<QFrame*> lines_test;
+    /*для списка паттернов*/
+    std::vector<QLabel*> pattern_label_list;
+    std::vector<QFrame*> pattern_frame_list;
+    std::vector<QPushButton*> pattern_btn_more_list;
+    std::vector<QPushButton*> pattern_btn_test_list;
+    std::vector<QHBoxLayout*> pattern_laoyut_list;
 
     std::unique_ptr<QTcpSocket> socket;
     const QString host{"localhost"};
@@ -110,18 +126,26 @@ private:
 
     void send_auth(const QString& login, const QString& password);
     void send_test_result(const QString& login, const QString& password);
+    void send_patterns_request();
 
     void fill_db_login(tinyxml2::XMLElement* body);
     void fill_db_register();
+    void fill_db_result_test(tinyxml2::XMLElement* body);
+    void fill_db_patterns(tinyxml2::XMLElement* body);
     void fill_personal_area();
-    void fill_result_test(tinyxml2::XMLElement* body);
 
+    /*заполнение форм данными из базы*/
     void fill_result_test_form();
+    void fill_patterns_list_form();
 
     void save_img_to_file(const QString& path, const QString& img);
+
+    /*выйти из аккаунта*/
+    void quit();
 
     /*выборка из базы данных*/
     user_info_t get_user_info();
     std::vector<result_test_t> get_result_test_info();
+    std::vector<QString> get_patterns_name();
 };
 #endif // MAINWINDOW_H

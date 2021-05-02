@@ -111,7 +111,7 @@ void MainWindow::slotReadyRead()
             auto type = doc.FirstChildElement("body")->FirstChildElement("answer");
             if (type->GetText() == QString("correct"))
             {
-                this->fill_result_test(doc.FirstChildElement("body"));
+                this->fill_db_result_test(doc.FirstChildElement("body"));
                 this->fill_result_test_form();
             }
             else
@@ -126,12 +126,19 @@ void MainWindow::slotReadyRead()
             auto type = doc.FirstChildElement("body")->FirstChildElement("answer");
             if (type->GetText() == QString("correct"))
             {
-                qDebug() << "Загружено на сервер!";
+                qDebug() << "upload correct";
             }
             else
             {
                 throw "Неверный логин или пароль!";
             }
+            break;
+        }
+
+        case (type_forward::load_patterns):
+        {
+            this->fill_db_patterns(doc.FirstChildElement("body"));
+            this->fill_patterns_list_form();
             break;
         }
         }
@@ -187,6 +194,10 @@ void MainWindow::slotConnected()
         info = this->get_user_info();
         this->send_test_result(info.login, info.password);
         break;
+
+    case (type_forward::load_patterns):
+        this->send_patterns_request();
+        break;
     }
 }
 
@@ -223,7 +234,7 @@ void MainWindow::create_db()
     }
     QSqlQuery query;
     query.exec("CREATE TABLE Pattern (                      "
-                    "id INTEGER NOT NULL UNIQUE PRIMARY KEY,"
+                    "id INTEGER NOT NULL UNIQUE PRIMARY KEY AUTOINCREMENT,"
                     "name VARCHAR(45) NOT NULL UNIQUE,      "
                     "description TEXT NOT NULL,             "
                     "code TEXT NOT NULL,                    "
@@ -334,23 +345,33 @@ void MainWindow::send_test_result(const QString &login, const QString &password)
     this->send(printer.CStr());
 }
 
+void MainWindow::send_patterns_request()
+{
+    QString request{"<?xml version=\"1.1\" encoding=\"UTF-8\"?><type>patterns</type>"};
+    this->send(request);
+}
+
 void MainWindow::fill_db_login(tinyxml2::XMLElement *body)
 {
     QString login {this->ui->login_lineEdit->text()};
     QString password {this->ui->password_lineEdit->text()};
     QString type_image {body->FirstChildElement("img_type")->GetText()};
     QString path_to_image {QDir::currentPath() + "/images/user." + type_image};
+
     this->base64_file = body->FirstChildElement("img")->GetText();
     this->save_img_to_file(path_to_image, this->base64_file);
 
-    this->fill_result_test(body);
+    QSqlQuery insert;
+    insert.exec("INSERT INTO User (login, password, path_to_image) VALUES ('" + login + "', '" + password + "', '" + path_to_image + "')");
+
+
+    this->fill_db_result_test(body);
 }
 
 void MainWindow::fill_db_register()
 {
     QString login {this->ui->reg_login->text()};
     QString password {this->ui->reg_pas->text()};
-    //qDebug() << "in reg: " + this->file_type;
     QString path_to_image {QDir::currentPath() + "/images/user." + this->file_type};
 
     this->save_img_to_file(path_to_image, this->base64_file);
@@ -373,6 +394,27 @@ void MainWindow::save_img_to_file(const QString &path, const QString &img)
     file.close();
 }
 
+void MainWindow::quit()
+{
+    this->socket.reset(new QTcpSocket());
+    socket->connectToHost(this->host, this->port);
+    connect(socket.get(), SIGNAL(connected()), SLOT(slotConnected()));
+    connect(socket.get(), SIGNAL(readyRead()), SLOT(slotReadyRead()));
+    connect(socket.get(), SIGNAL(errorOccurred(QAbstractSocket::SocketError)), this,  SLOT(slotError(QAbstractSocket::SocketError)));
+
+    this->ui->screen_stacked->setCurrentIndex((int)screen::login);
+    this->forward = type_forward::login;
+
+    this->db.close();
+    QFile::remove(QDir::currentPath() + "/main.db");
+    QDir image_dir(QDir::currentPath() + "/images");
+    image_dir.removeRecursively();
+    QDir dir(QDir::currentPath());
+    dir.mkdir("images");
+    this->ui->login_2->setEnabled(false);
+    this->ui->register_2->setEnabled(false);
+}
+
 void MainWindow::fill_personal_area()
 {
     user_info_t info{this->get_user_info()};
@@ -380,12 +422,11 @@ void MainWindow::fill_personal_area()
     this->pic = QPixmap();
     this->pic.load(info.path_to_image);
 
-    //this->pic = this->pic.scaled(QSize(256,256), Qt::AspectRatioMode(), Qt::SmoothTransformation);
     this->ui->img_profile->setPixmap(this->pic);
     this->ui->show_login->setText("Логин: " + info.login);
 }
 
-void MainWindow::fill_result_test(tinyxml2::XMLElement *body)
+void MainWindow::fill_db_result_test(tinyxml2::XMLElement *body)
 {
     QSqlQuery insert;
     insert.exec("DELETE FROM User_test");
@@ -406,39 +447,118 @@ void MainWindow::fill_result_test(tinyxml2::XMLElement *body)
     }
 }
 
+void MainWindow::fill_db_patterns(tinyxml2::XMLElement *body)
+{
+    QSqlQuery query("DELETE FROM Pattern");
+
+    tinyxml2::XMLElement * patterns = body->FirstChildElement("pattern_list");
+    tinyxml2::XMLElement * pattern = patterns->FirstChildElement("pattern");
+    while (pattern)
+    {
+        QString name {pattern->FirstChildElement("name")->GetText()};
+        QString description {pattern->FirstChildElement("description")->GetText()};
+        QString code {pattern->FirstChildElement("code")->GetText()};
+        QString img_64 {pattern->FirstChildElement("img")->GetText()};
+        QString img_type {pattern->FirstChildElement("img_type")->GetText()};
+
+        QString path_to_image {QDir::currentPath() + "/images/" + name + "." + img_type};
+        this->save_img_to_file(path_to_image, img_64);
+
+        QSqlQuery inser("INSERT INTO Pattern (name, description, code, path_to_image)"
+                        " VALUES ('" + name + "', '" + description + "', '" + code + "', '" + path_to_image + "')");
+
+
+
+
+        pattern = pattern->NextSiblingElement("pattern");
+    }
+}
+
 void MainWindow::fill_result_test_form()
 {
     auto data {this->get_result_test_info()};
 
     /*clear*/
     size_t i = 0;
-    for (size_t i = 0; i < results_test.size(); i++)
+    for (size_t i = 0; i < label_test.size(); i++)
     {
-        delete this->results_test[i];
-        if (int(i) != int(results_test.size()) - 1)
+        delete this->label_test[i];
+        if (int(i) != int(label_test.size()) - 1)
         {
-            delete this->lines[i];
+            delete this->lines_test[i];
         }
     }
-    this->results_test.clear();
-    this->lines.clear();
+    this->label_test.clear();
+    this->lines_test.clear();
 
     /*results*/
     i = 0;
     this->ui->result_layout->setSizeConstraint(QLayout::SetMinimumSize);
     for (i = 0; i < data.size(); i++)
     {
-        this->results_test.push_back(new QLabel(this));
-        this->results_test[i]->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-        this->results_test[i]->setWordWrap(true);
-        this->results_test[i]->setText(data[i].name + ": " + data[i].result + "/10");
-        this->ui->result_layout->addWidget(this->results_test[i]);
+        this->label_test.push_back(new QLabel(this));
+        this->label_test[i]->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+        this->label_test[i]->setWordWrap(true);
+        this->label_test[i]->setText(data[i].name + ": " + data[i].result + "/10");
+        this->ui->result_layout->addWidget(this->label_test[i]);
 
         if (int(i) != int(data.size()) - 1)
         {
-            this->lines.push_back(new QFrame());
-            this->lines[i]->setFrameShape(QFrame::HLine);
-            this->ui->result_layout->addWidget(this->lines[i]);
+            this->lines_test.push_back(new QFrame());
+            this->lines_test[i]->setFrameShape(QFrame::HLine);
+            this->ui->result_layout->addWidget(this->lines_test[i]);
+        }
+    }
+}
+
+void MainWindow::fill_patterns_list_form()
+{
+    auto data{this->get_patterns_name()};
+
+    /*clear*/
+    size_t i = 0;
+    for (size_t i = 0; i < pattern_label_list.size(); i++)
+    {
+        delete this->pattern_label_list[i];
+        delete this->pattern_btn_more_list[i];
+        delete this->pattern_btn_test_list[i];
+        delete this->pattern_laoyut_list[i];
+        if (int(i) != int(pattern_label_list.size()) - 1)
+        {
+            delete this->pattern_frame_list[i];
+        }
+    }
+    this->pattern_label_list.clear();
+    this->pattern_btn_more_list.clear();
+    this->pattern_btn_test_list.clear();
+    this->pattern_laoyut_list.clear();
+    this->pattern_frame_list.clear();
+
+    /*results*/
+    i = 0;
+    for (i = 0; i < data.size(); i++)
+    {
+        this->pattern_laoyut_list.push_back(new QHBoxLayout(this));
+
+        this->pattern_label_list.push_back(new QLabel(this));
+        this->pattern_label_list[i]->setWordWrap(true);
+        this->pattern_label_list[i]->setText(data[i]);
+        this->pattern_laoyut_list[i]->addWidget(this->pattern_label_list[i]);
+
+        this->pattern_btn_more_list.push_back(new QPushButton(this));
+        this->pattern_btn_more_list[i]->setText("Подробнее");
+        this->pattern_laoyut_list[i]->addWidget(this->pattern_btn_more_list[i]);
+
+        this->pattern_btn_test_list.push_back(new QPushButton(this));
+        this->pattern_btn_test_list[i]->setText("Тест");
+        this->pattern_laoyut_list[i]->addWidget(this->pattern_btn_test_list[i]);
+
+        this->ui->pattern_list_2->addLayout(this->pattern_laoyut_list[i]);
+        if (int(i) != int(data.size()) - 1)
+        {
+            this->pattern_frame_list.push_back(new QFrame());
+            this->pattern_frame_list[i]->setFrameShape(QFrame::HLine);
+            this->ui->pattern_list_2->addWidget(this->pattern_frame_list[i]);
         }
     }
 }
@@ -472,6 +592,19 @@ std::vector<result_test_t> MainWindow::get_result_test_info()
         tmp.result = query.value(1).toString();
         res.push_back(std::move(tmp));
     }
+    return res;
+}
+
+std::vector<QString> MainWindow::get_patterns_name()
+{
+    std::vector<QString> res;
+    QSqlQuery query;
+    query.exec("SELECT name FROM Pattern");
+    while (query.next())
+    {
+        res.push_back(query.value(0).toString());
+    }
+
     return res;
 }
 
@@ -541,23 +674,7 @@ void MainWindow::on_reg_img_clicked()
 
 void MainWindow::on_quit_clicked()
 {
-    this->socket.reset(new QTcpSocket());
-    socket->connectToHost(this->host, this->port);
-    connect(socket.get(), SIGNAL(connected()), SLOT(slotConnected()));
-    connect(socket.get(), SIGNAL(readyRead()), SLOT(slotReadyRead()));
-    connect(socket.get(), SIGNAL(errorOccurred(QAbstractSocket::SocketError)), this,  SLOT(slotError(QAbstractSocket::SocketError)));
-
-    this->ui->screen_stacked->setCurrentIndex((int)screen::login);
-    this->forward = type_forward::login;
-
-    this->db.close();
-    QFile::remove(QDir::currentPath() + "/main.db");
-    QDir image_dir(QDir::currentPath() + "/images");
-    image_dir.removeRecursively();
-    QDir dir(QDir::currentPath());
-    dir.mkdir("images");
-    this->ui->login_2->setEnabled(false);
-    this->ui->register_2->setEnabled(false);
+    this->quit();
 }
 
 void MainWindow::on_to_result_test_clicked()
@@ -584,6 +701,28 @@ void MainWindow::on_load_result_clicked()
 void MainWindow::on_upload_result_clicked()
 {
     this->forward = type_forward::upload_result;
+
+    this->socket.reset(new QTcpSocket());
+    socket->connectToHost(this->host, this->port);
+    connect(socket.get(), SIGNAL(connected()), SLOT(slotConnected()));
+    connect(socket.get(), SIGNAL(readyRead()), SLOT(slotReadyRead()));
+    connect(socket.get(), SIGNAL(errorOccurred(QAbstractSocket::SocketError)), this,  SLOT(slotError(QAbstractSocket::SocketError)));
+}
+
+void MainWindow::on_to_patterns_clicked()
+{
+    this->fill_patterns_list_form();
+    this->ui->screen_stacked->setCurrentIndex((int)screen::patterns);
+}
+
+void MainWindow::on_to_personal_area_2_clicked()
+{
+    this->ui->screen_stacked->setCurrentIndex((int)screen::personal_area);
+}
+
+void MainWindow::on_update_patterns_clicked()
+{
+    this->forward = type_forward::load_patterns;
 
     this->socket.reset(new QTcpSocket());
     socket->connectToHost(this->host, this->port);
