@@ -419,10 +419,10 @@ void MainWindow::fill_personal_area()
 {
     user_info_t info{this->get_user_info()};
 
-    this->pic = QPixmap();
-    this->pic.load(info.path_to_image);
+    this->profile_pic = QPixmap();
+    this->profile_pic.load(info.path_to_image);
 
-    this->ui->img_profile->setPixmap(this->pic);
+    this->ui->img_profile->setPixmap(this->profile_pic);
     this->ui->show_login->setText("Логин: " + info.login);
 }
 
@@ -464,7 +464,7 @@ void MainWindow::fill_db_patterns(tinyxml2::XMLElement *body)
         QString path_to_image {QDir::currentPath() + "/images/" + name + "." + img_type};
         this->save_img_to_file(path_to_image, img_64);
 
-        QSqlQuery inser("INSERT INTO Pattern (name, description, code, path_to_image)"
+        QSqlQuery insert("INSERT INTO Pattern (name, description, code, path_to_image)"
                         " VALUES ('" + name + "', '" + description + "', '" + code + "', '" + path_to_image + "')");
 
 
@@ -548,6 +548,8 @@ void MainWindow::fill_patterns_list_form()
         this->pattern_btn_more_list.push_back(new QPushButton(this));
         this->pattern_btn_more_list[i]->setText("Подробнее");
         this->pattern_laoyut_list[i]->addWidget(this->pattern_btn_more_list[i]);
+        QString lambda{data[i]};
+        connect(this->pattern_btn_more_list[i], &QPushButton::clicked, [this, lambda] { this->on_more_btn_clicked(lambda); });
 
         this->pattern_btn_test_list.push_back(new QPushButton(this));
         this->pattern_btn_test_list[i]->setText("Тест");
@@ -606,6 +608,32 @@ std::vector<QString> MainWindow::get_patterns_name()
     }
 
     return res;
+}
+
+pattern_info_t MainWindow::get_pattern_info(QString name)
+{
+    QSqlQuery query;
+    if (!query.exec("SELECT name, description, code, path_to_image FROM Pattern WHERE name = '" + name + "'"))
+        qDebug() << "ERROR";
+
+    query.next();
+
+    return {query.value(0).toString(), query.value(1).toString(), query.value(2).toString(), query.value(3).toString()};
+}
+
+void MainWindow::on_more_btn_clicked(QString name)
+{
+    this->ui->screen_stacked->setCurrentIndex((int)screen::more_pattern);
+    this->ui->name_more->setText("Название: " + name);
+
+    pattern_info_t data{this->get_pattern_info(name)};
+    this->ui->description_more->setText(data.description);
+    this->ui->code_more->setText(data.code);
+
+    this->pattern_pic = QPixmap();
+    this->pattern_pic.load(data.path_to_image);
+
+    this->ui->img_more->setPixmap(this->pattern_pic);
 }
 
 void MainWindow::on_to_register_clicked()
@@ -729,4 +757,9 @@ void MainWindow::on_update_patterns_clicked()
     connect(socket.get(), SIGNAL(connected()), SLOT(slotConnected()));
     connect(socket.get(), SIGNAL(readyRead()), SLOT(slotReadyRead()));
     connect(socket.get(), SIGNAL(errorOccurred(QAbstractSocket::SocketError)), this,  SLOT(slotError(QAbstractSocket::SocketError)));
+}
+
+void MainWindow::on_to_pattern_list_clicked()
+{
+    this->ui->screen_stacked->setCurrentIndex((int)screen::patterns);
 }

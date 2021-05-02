@@ -41,6 +41,14 @@ struct result_test_t
     QString result;
 };
 
+struct pattern_info_t
+{
+    QString name;
+    QString description;
+    QString code;
+    QString path_to_image;
+};
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -48,6 +56,8 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+
+    void on_more_btn_clicked(QString name);
 
 private slots:
     void on_login_2_clicked();
@@ -80,6 +90,8 @@ private slots:
 
     void on_update_patterns_clicked();
 
+    void on_to_pattern_list_clicked();
+
 private:
     enum class screen
     {
@@ -87,7 +99,8 @@ private:
         registration = 1,
         personal_area = 2,
         patterns = 3,
-        result_test = 4
+        result_test = 4,
+        more_pattern = 5
     };
     enum class type_forward
     {
@@ -100,7 +113,8 @@ private:
 
     Ui::MainWindow *ui;
     Popup *popup;
-    QPixmap pic;
+    QPixmap profile_pic;
+    QPixmap pattern_pic;
     QSqlDatabase db;
     type_forward forward;
     QString base64_file;
@@ -147,5 +161,6 @@ private:
     user_info_t get_user_info();
     std::vector<result_test_t> get_result_test_info();
     std::vector<QString> get_patterns_name();
+    pattern_info_t get_pattern_info(QString name);
 };
 #endif // MAINWINDOW_H

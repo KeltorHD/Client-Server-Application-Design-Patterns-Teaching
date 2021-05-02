@@ -22,7 +22,7 @@
     <item>
      <widget class="QStackedWidget" name="screen_stacked">
       <property name="currentIndex">
-       <number>3</number>
+       <number>5</number>
       </property>
       <widget class="QWidget" name="login">
        <layout class="QHBoxLayout" name="horizontalLayout_2">
@@ -453,8 +453,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>254</width>
-             <height>288</height>
+             <width>240</width>
+             <height>20</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -568,7 +568,7 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>98</width>
+             <width>240</width>
              <height>395</height>
             </rect>
            </property>
@@ -675,6 +675,141 @@
            </size>
           </property>
          </spacer>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="more_pattern">
+       <layout class="QVBoxLayout" name="verticalLayout_2">
+        <item>
+         <widget class="QScrollArea" name="scrollArea_2">
+          <property name="widgetResizable">
+           <bool>true</bool>
+          </property>
+          <widget class="QWidget" name="scrollAreaWidgetContents_2">
+           <property name="geometry">
+            <rect>
+             <x>0</x>
+             <y>-310</y>
+             <width>438</width>
+             <height>599</height>
+            </rect>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_5">
+            <item>
+             <widget class="QLabel" name="name_more">
+              <property name="text">
+               <string>Название: тест</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="Line" name="line">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="description_more_2">
+              <property name="text">
+               <string>Описание:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="description_more">
+              <property name="text">
+               <string>Тест</string>
+              </property>
+              <property name="wordWrap">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="Line" name="line_2">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_8">
+              <property name="text">
+               <string>Пример кода:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QTextEdit" name="code_more">
+              <property name="readOnly">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="Line" name="line_3">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_9">
+              <property name="text">
+               <string>Иллюстрация к Паттерну:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="img_more">
+              <property name="maximumSize">
+               <size>
+                <width>512</width>
+                <height>512</height>
+               </size>
+              </property>
+              <property name="text">
+               <string/>
+              </property>
+              <property name="pixmap">
+               <pixmap resource="res.qrc">:/default.png</pixmap>
+              </property>
+              <property name="scaledContents">
+               <bool>false</bool>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </widget>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_6">
+          <item>
+           <spacer name="horizontalSpacer_14">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QPushButton" name="to_pattern_list">
+            <property name="text">
+             <string>Назад</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
        </layout>
       </widget>
