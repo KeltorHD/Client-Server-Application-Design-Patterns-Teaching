@@ -461,14 +461,16 @@ void MainWindow::fill_db_patterns(tinyxml2::XMLElement *body)
         QString img_64 {pattern->FirstChildElement("img")->GetText()};
         QString img_type {pattern->FirstChildElement("img_type")->GetText()};
 
-        QString path_to_image {QDir::currentPath() + "/images/" + name + "." + img_type};
+
+        QSqlQuery id_query("SELECT id FROM Pattern ORDER BY id DESC");
+        id_query.next();
+        QString id{QString::number(id_query.value(0).toInt() + 1)};
+
+        QString path_to_image {QDir::currentPath() + "/images/" + id + "." + img_type};
         this->save_img_to_file(path_to_image, img_64);
 
         QSqlQuery insert("INSERT INTO Pattern (name, description, code, path_to_image)"
                         " VALUES ('" + name + "', '" + description + "', '" + code + "', '" + path_to_image + "')");
-
-
-
 
         pattern = pattern->NextSiblingElement("pattern");
     }
@@ -632,6 +634,19 @@ void MainWindow::on_more_btn_clicked(QString name)
 
     this->pattern_pic = QPixmap();
     this->pattern_pic.load(data.path_to_image);
+    int width{this->pattern_pic.width()};
+    if (width > 512)
+    {
+        double ratio {width / 512.0};
+
+        this->pattern_pic = this->pattern_pic.scaled(512, int(this->pattern_pic.height() / ratio), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+    }
+    else
+    {
+        double ratio {512.0 / width};
+
+        this->pattern_pic = this->pattern_pic.scaled(512, int(this->pattern_pic.height() * ratio), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+    }
 
     this->ui->img_more->setPixmap(this->pattern_pic);
 }

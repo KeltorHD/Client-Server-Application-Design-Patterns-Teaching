@@ -123,6 +123,7 @@ private:
     /*для результатов тестов*/
     std::vector<QLabel*> label_test;
     std::vector<QFrame*> lines_test;
+
     /*для списка паттернов*/
     std::vector<QLabel*> pattern_label_list;
     std::vector<QFrame*> pattern_frame_list;

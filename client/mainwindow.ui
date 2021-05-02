@@ -6,9 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>490</width>
-    <height>369</height>
+    <width>710</width>
+    <height>539</height>
    </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>512</width>
+    <height>0</height>
+   </size>
   </property>
   <property name="windowTitle">
    <string>Паттерны Проектирования</string>
@@ -22,7 +28,7 @@
     <item>
      <widget class="QStackedWidget" name="screen_stacked">
       <property name="currentIndex">
-       <number>5</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="login">
        <layout class="QHBoxLayout" name="horizontalLayout_2">
@@ -453,8 +459,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>240</width>
-             <height>20</height>
+             <width>254</width>
+             <height>460</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -568,7 +574,7 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>240</width>
+             <width>237</width>
              <height>395</height>
             </rect>
            </property>
@@ -679,6 +685,12 @@
        </layout>
       </widget>
       <widget class="QWidget" name="more_pattern">
+       <property name="minimumSize">
+        <size>
+         <width>512</width>
+         <height>0</height>
+        </size>
+       </property>
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
          <widget class="QScrollArea" name="scrollArea_2">
@@ -689,10 +701,16 @@
            <property name="geometry">
             <rect>
              <x>0</x>
-             <y>-310</y>
-             <width>438</width>
-             <height>599</height>
+             <y>0</y>
+             <width>655</width>
+             <height>594</height>
             </rect>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>512</width>
+             <height>0</height>
+            </size>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_5">
             <item>
@@ -763,20 +781,11 @@
             </item>
             <item>
              <widget class="QLabel" name="img_more">
-              <property name="maximumSize">
-               <size>
-                <width>512</width>
-                <height>512</height>
-               </size>
-              </property>
               <property name="text">
                <string/>
               </property>
               <property name="pixmap">
                <pixmap resource="res.qrc">:/default.png</pixmap>
-              </property>
-              <property name="scaledContents">
-               <bool>false</bool>
               </property>
               <property name="alignment">
                <set>Qt::AlignCenter</set>
@@ -822,7 +831,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>490</width>
+     <width>710</width>
      <height>21</height>
     </rect>
    </property>
