@@ -13,6 +13,17 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
     this->popup = new Popup(this);
+    this->test_widget = new Test_widget(this);
+    this->ui->test_layout->addWidget(this->test_widget);
+    this->validator = new QRegularExpressionValidator(QRegularExpression("[A-Za-z0-9_]+"), this);
+    this->ui->reg_login->setValidator(this->validator);
+    this->ui->reg_pas->setValidator(this->validator);
+
+    for (size_t i = 0; i < this->test_widget->back.size(); i++)
+    {
+        connect(this->test_widget->back[i], &QPushButton::clicked, [this] { this->back_to_list(); });
+    }
+    connect(this->test_widget->result_done, &QPushButton::clicked, [this] { this->check_test(); });
 
     if (!fileExists(QDir::currentPath() + "/main.db"))
     {
@@ -59,13 +70,11 @@ void MainWindow::on_login_2_clicked()
 
 void MainWindow::slotReadyRead()
 {
-    qDebug() << "Ready to read!";
     try
     {
         tinyxml2::XMLDocument doc;
         QString data = this->recv();
         doc.Parse(data.toUtf8());
-        qDebug() << data;
 
         switch (this->forward)
         {
@@ -113,10 +122,16 @@ void MainWindow::slotReadyRead()
             {
                 this->fill_db_result_test(doc.FirstChildElement("body"));
                 this->fill_result_test_form();
+
+                this->popup->set_title("Успешно");
+                this->popup->set_description("Данные успешно скачаны с сервера!");
+                this->popup->exec();
             }
             else
             {
-                throw "Неверный логин или пароль!";
+                this->popup->set_title("Ошибка");
+                this->popup->set_description("Неверный логин или пароль!");
+                this->popup->exec();
             }
             break;
         }
@@ -126,11 +141,15 @@ void MainWindow::slotReadyRead()
             auto type = doc.FirstChildElement("body")->FirstChildElement("answer");
             if (type->GetText() == QString("correct"))
             {
-                qDebug() << "upload correct";
+                this->popup->set_title("Успешно");
+                this->popup->set_description("Данные успешно загружены на сервер!");
+                this->popup->exec();
             }
             else
             {
-                throw "Неверный логин или пароль!";
+                this->popup->set_title("Ошибка");
+                this->popup->set_description("Неверный логин или пароль!");
+                this->popup->exec();
             }
             break;
         }
@@ -139,6 +158,10 @@ void MainWindow::slotReadyRead()
         {
             this->fill_db_patterns(doc.FirstChildElement("body"));
             this->fill_patterns_list_form();
+
+            this->popup->set_title("Успешно");
+            this->popup->set_description("Список паттернов обновлен!");
+            this->popup->exec();
             break;
         }
         }
@@ -170,13 +193,16 @@ void MainWindow::slotReadyRead()
 
 void MainWindow::slotError(QAbstractSocket::SocketError)
 {
-    qDebug() << "socket error!";
+    this->popup->set_title("Произошла ошибка");
+    this->popup->set_description("Ошибка соединения с сервером");
+    this->popup->exec();
+    this->socket->close();
+    socket->connectToHost(this->host, this->port);
 }
 
 void MainWindow::slotConnected()
 {
     user_info_t info;
-    qDebug() << "host connected";
     switch (this->forward)
     {
     case (type_forward::login):
@@ -240,14 +266,14 @@ void MainWindow::create_db()
                     "code TEXT NOT NULL,                    "
                     "path_to_image VARCHAR(256) NOT NULL);  ");
     query.exec("CREATE TABLE Pattern_test (           "
-                    "id_pattern INTEGER NOT NULL,           "
-                    "question TEXT NOT NULL,                "
-                    "id_type INTEGER NOT NULL,              "
-                    "a1 VARCHAR(45) NOT NULL DEFAULT 'NULL',"
-                    "a2 VARCHAR(45) NOT NULL DEFAULT 'NULL',"
-                    "a3 VARCHAR(45) NOT NULL DEFAULT 'NULL',"
-                    "a4 VARCHAR(45) NOT NULL DEFAULT 'NULL',"
-                    "correct_answer VARCHAR(45) NOT NULL);  " );
+                    "pattern_name VARCHAR(45) NOT NULL,        "
+                    "question TEXT NOT NULL,                   "
+                    "id_type INTEGER NOT NULL,                 "
+                    "a1 VARCHAR(45) NULL DEFAULT 'NULL',   "
+                    "a2 VARCHAR(45) NULL DEFAULT 'NULL',   "
+                    "a3 VARCHAR(45) NULL DEFAULT 'NULL',   "
+                    "a4 VARCHAR(45) NULL DEFAULT 'NULL',   "
+                    "correct_answer VARCHAR(45) NOT NULL);     " );
     query.exec("CREATE TABLE User (                              "
                     "login VARCHAR(45) NOT NULL UNIQUE,          "
                     "password VARCHAR(45) NOT NULL UNIQUE,       "
@@ -340,8 +366,6 @@ void MainWindow::send_test_result(const QString &login, const QString &password)
     tinyxml2::XMLPrinter printer;
     doc.Print(&printer);
 
-    qDebug() << printer.CStr();
-
     this->send(printer.CStr());
 }
 
@@ -409,8 +433,10 @@ void MainWindow::quit()
     QFile::remove(QDir::currentPath() + "/main.db");
     QDir image_dir(QDir::currentPath() + "/images");
     image_dir.removeRecursively();
-    QDir dir(QDir::currentPath());
-    dir.mkdir("images");
+    QDir dir1(QDir::currentPath());
+    dir1.mkdir("images");
+    QDir dir2(QDir::currentPath() + "/images");
+    dir2.mkdir("patterns");
     this->ui->login_2->setEnabled(false);
     this->ui->register_2->setEnabled(false);
 }
@@ -449,7 +475,14 @@ void MainWindow::fill_db_result_test(tinyxml2::XMLElement *body)
 
 void MainWindow::fill_db_patterns(tinyxml2::XMLElement *body)
 {
-    QSqlQuery query("DELETE FROM Pattern");
+    QSqlQuery query1("DELETE FROM Pattern");
+    QSqlQuery query2("DELETE FROM Pattern_test");
+    QDir image_dir(QDir::currentPath() + "/images/patterns");
+    image_dir.removeRecursively();
+    QDir dir1(QDir::currentPath());
+    dir1.mkdir("images");
+    QDir dir2(QDir::currentPath() + "/images");
+    dir2.mkdir("patterns");
 
     tinyxml2::XMLElement * patterns = body->FirstChildElement("pattern_list");
     tinyxml2::XMLElement * pattern = patterns->FirstChildElement("pattern");
@@ -461,16 +494,50 @@ void MainWindow::fill_db_patterns(tinyxml2::XMLElement *body)
         QString img_64 {pattern->FirstChildElement("img")->GetText()};
         QString img_type {pattern->FirstChildElement("img_type")->GetText()};
 
+        QSqlQuery insert("INSERT INTO Pattern (name, description, code, path_to_image)"
+                        " VALUES ('" + name + "', '" + description + "', '" + code + "', 'temp')");
 
         QSqlQuery id_query("SELECT id FROM Pattern ORDER BY id DESC");
         id_query.next();
         QString id{QString::number(id_query.value(0).toInt() + 1)};
 
-        QString path_to_image {QDir::currentPath() + "/images/" + id + "." + img_type};
+        QString path_to_image {QDir::currentPath() + "/images/patterns/" + id + "." + img_type};
         this->save_img_to_file(path_to_image, img_64);
+        QSqlQuery update("UPDATE Pattern SET path_to_image = '" + path_to_image + "' WHERE name = '" + name + "'");
 
-        QSqlQuery insert("INSERT INTO Pattern (name, description, code, path_to_image)"
-                        " VALUES ('" + name + "', '" + description + "', '" + code + "', '" + path_to_image + "')");
+
+        tinyxml2::XMLElement * tests = pattern->FirstChildElement("test_list");
+        if (tests)
+        {
+            tinyxml2::XMLElement * test = tests->FirstChildElement("test");
+            while(test)
+            {
+                QString question {test->FirstChildElement("question")->GetText()};
+                QString correct_answer {test->FirstChildElement("correct_answer")->GetText()};
+
+                int type {test->FirstChildElement("id_description")->IntText()};
+                if (type == 1)
+                {
+                    QString a1 {test->FirstChildElement("a1")->GetText()};
+                    QString a2 {test->FirstChildElement("a2")->GetText()};
+                    QString a3 {test->FirstChildElement("a3")->GetText()};
+                    QString a4 {test->FirstChildElement("a4")->GetText()};
+
+                    QSqlQuery insert("INSERT INTO Pattern_test (pattern_name, question, id_type, a1, a2, a3, a4, correct_answer) "
+                                     "VALUES ('" + name + "', '" + question + "', '" + QString::number(type) + "', "
+                                     "'" + a1 + "', '" + a2 + "', '" + a3 + "', '" + a4 + "',"
+                                     " '" + correct_answer + "')");
+                }
+                else if (type == 2)
+                {
+                    QSqlQuery insert("INSERT INTO Pattern_test (pattern_name, question, id_type, correct_answer) "
+                                     "VALUES ('" + name + "', '" + question + "', '" + QString::number(type) + "', '" + correct_answer + "')");
+                }
+
+                test = test->NextSiblingElement("test");
+            }
+        }
+
 
         pattern = pattern->NextSiblingElement("pattern");
     }
@@ -616,8 +683,7 @@ std::vector<QString> MainWindow::get_patterns_name()
 pattern_info_t MainWindow::get_pattern_info(QString name)
 {
     QSqlQuery query;
-    if (!query.exec("SELECT name, description, code, path_to_image FROM Pattern WHERE name = '" + name + "'"))
-        qDebug() << "ERROR";
+    query.exec("SELECT name, description, code, path_to_image FROM Pattern WHERE name = '" + name + "'");
 
     query.next();
 
@@ -654,7 +720,59 @@ void MainWindow::on_more_btn_clicked(const QString& name)
 
 void MainWindow::on_to_test_btn_clicked(const QString &name)
 {
+    QFile file("tmp.txt");
+    file.open(QIODevice::WriteOnly | QIODevice::Text);
+
+    QTextStream questions(&file);
+    QSqlQuery select("SELECT * FROM Pattern_test WHERE pattern_name = '" + name + "'");
+    QSqlQuery count("SELECT COUNT(*) FROM Pattern_test WHERE pattern_name = '" + name + "'");
+    count.next();
+
+    int counter {count.value(0).toInt()};
+    questions << counter << "\n";
+    while (select.next())
+    {
+        int type {select.value(2).toInt()};
+
+        if (type == 1)
+        {
+            questions << "1\n";
+            questions << select.value(1).toString() << "\n"; /*вопрос*/
+
+            questions << select.value(3).toString() << "\n"; /*ответы*/
+            questions << select.value(4).toString() << "\n";
+            questions << select.value(5).toString() << "\n";
+            questions << select.value(6).toString() << "\n";
+
+            questions << select.value(7).toString() << "\n"; /*правильный ответ*/
+        }
+        else if (type == 2)
+        {
+            questions << "3\n";
+            questions << select.value(1).toString() << "\n"; /*вопрос*/
+
+            questions << select.value(7).toString() << "\n"; /*правильный ответ*/
+        }
+    }
+    file.close();
+
+    this->test_widget->init("tmp.txt");
+    this->test_widget->pattern = name;
+    QFile::remove("tmp.txt");
     this->ui->screen_stacked->setCurrentIndex((int)screen::test_pattern);
+}
+
+void MainWindow::back_to_list()
+{
+    this->test_widget->stop_timer();
+    this->ui->screen_stacked->setCurrentIndex((int)screen::patterns);
+}
+
+void MainWindow::check_test()
+{
+    QSqlQuery delete_query("DELETE FROM User_test WHERE pattern = '" + this->test_widget->pattern + "'");
+    QSqlQuery insert("INSERT INTO User_test (pattern, count_corrent) VALUES ('" + this->test_widget->pattern + "', " + QString::number(this->test_widget->count_correct) + ")");
+    this->fill_result_test_form();
 }
 
 void MainWindow::on_to_register_clicked()

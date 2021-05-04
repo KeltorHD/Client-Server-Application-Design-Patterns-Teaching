@@ -15,11 +15,14 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QPushButton>
+#include <QTextStream>
+#include <QRegularExpressionValidator>
 
 #include <memory>
 #include <vector>
 #include <fstream>
 
+#include "test_widget.h"
 #include "tinyxml2.h"
 #include "popup.h"
 #include "base64.hpp"
@@ -61,6 +64,10 @@ public:
     void on_more_btn_clicked(const QString& name);
     /*открытие теста по паттерну*/
     void on_to_test_btn_clicked(const QString& name);
+    /*вернуться к списку паттернов*/
+    void back_to_list();
+    /*тест пройден*/
+    void check_test();
 
 private slots:
     void on_login_2_clicked();
@@ -123,6 +130,8 @@ private:
     type_forward forward;
     QString base64_file;
     QString file_type;
+    QValidator *validator;
+    Test_widget* test_widget;
 
     /*для результатов тестов*/
     std::vector<QLabel*> label_test;

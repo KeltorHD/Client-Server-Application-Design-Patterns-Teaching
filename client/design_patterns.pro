@@ -10,20 +10,34 @@ CONFIG += c++17
 
 SOURCES += \
     base64.cpp \
+    installation_of_correspondence.cpp \
     main.cpp \
     mainwindow.cpp \
+    one_of_four.cpp \
     popup.cpp \
-    tinyxml2.cpp
+    some_of_four.cpp \
+    test.cpp \
+    test_widget.cpp \
+    tinyxml2.cpp \
+    write_answer.cpp
 
 HEADERS += \
     base64.hpp \
+    installation_of_correspondence.h \
     mainwindow.h \
+    one_of_four.h \
     popup.h \
-    tinyxml2.h
+    question_base.h \
+    some_of_four.h \
+    test.h \
+    test_widget.h \
+    tinyxml2.h \
+    write_answer.h
 
 FORMS += \
     mainwindow.ui \
-    popup.ui
+    popup.ui \
+    test_widget.ui
     
 RESOURCES += res.qrc
 
