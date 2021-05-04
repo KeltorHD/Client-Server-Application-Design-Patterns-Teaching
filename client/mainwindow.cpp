@@ -556,6 +556,7 @@ void MainWindow::fill_patterns_list_form()
         this->pattern_btn_test_list.push_back(new QPushButton(this));
         this->pattern_btn_test_list[i]->setText("Тест");
         this->pattern_laoyut_list[i]->addWidget(this->pattern_btn_test_list[i]);
+        connect(this->pattern_btn_test_list[i], &QPushButton::clicked, [this, lambda] { this->on_to_test_btn_clicked(lambda); });
 
         this->ui->pattern_list_2->addLayout(this->pattern_laoyut_list[i]);
         if (int(i) != int(data.size()) - 1)
@@ -623,7 +624,7 @@ pattern_info_t MainWindow::get_pattern_info(QString name)
     return {query.value(0).toString(), query.value(1).toString(), query.value(2).toString(), query.value(3).toString()};
 }
 
-void MainWindow::on_more_btn_clicked(QString name)
+void MainWindow::on_more_btn_clicked(const QString& name)
 {
     this->ui->screen_stacked->setCurrentIndex((int)screen::more_pattern);
     this->ui->name_more->setText("Название: " + name);
@@ -649,6 +650,11 @@ void MainWindow::on_more_btn_clicked(QString name)
     }
 
     this->ui->img_more->setPixmap(this->pattern_pic);
+}
+
+void MainWindow::on_to_test_btn_clicked(const QString &name)
+{
+    this->ui->screen_stacked->setCurrentIndex((int)screen::test_pattern);
 }
 
 void MainWindow::on_to_register_clicked()

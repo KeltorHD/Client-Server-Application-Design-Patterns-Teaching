@@ -57,7 +57,10 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
-    void on_more_btn_clicked(QString name);
+    /*открытие подробного описания паттерна*/
+    void on_more_btn_clicked(const QString& name);
+    /*открытие теста по паттерну*/
+    void on_to_test_btn_clicked(const QString& name);
 
 private slots:
     void on_login_2_clicked();
@@ -100,7 +103,8 @@ private:
         personal_area = 2,
         patterns = 3,
         result_test = 4,
-        more_pattern = 5
+        more_pattern = 5,
+        test_pattern = 6
     };
     enum class type_forward
     {
