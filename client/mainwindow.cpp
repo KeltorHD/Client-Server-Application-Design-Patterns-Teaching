@@ -77,12 +77,9 @@ void MainWindow::slotReadyRead()
 
         int32_t length;
         std::memcpy(&length, buf, sizeof(int32_t));
-//        qDebug() << "len buf: " <<length;
 
         this->msg_length = length - 1;
     }
-
-//    qDebug() << "slot ready read, bytesAvailable: " << this->socket->bytesAvailable();
 
     if (this->socket->bytesAvailable() >= this->msg_length)
     {
@@ -97,8 +94,12 @@ void MainWindow::slotError(QAbstractSocket::SocketError)
     this->popup->set_title("Произошла ошибка");
     this->popup->set_description("Ошибка соединения с сервером");
     this->popup->exec();
-    this->socket->close();
-    socket->connectToHost(this->host, this->port);
+
+    if (this->forward == type_forward::login || this->forward == type_forward::registration)
+    {
+        this->socket->close();
+        socket->connectToHost(this->host, this->port);
+    }
 }
 
 void MainWindow::slotConnected()
@@ -578,7 +579,8 @@ void MainWindow::fill_db_patterns(tinyxml2::XMLElement *body)
         QString img_64 {pattern->FirstChildElement("img")->GetText()};
         QString img_type {pattern->FirstChildElement("img_type")->GetText()};
 
-        QSqlQuery insert("INSERT INTO Pattern (name, description, code, path_to_image)"
+        QSqlQuery insert;
+        insert.exec("INSERT INTO Pattern (name, description, code, path_to_image)"
                         " VALUES ('" + name + "', '" + description + "', '" + code + "', 'temp')");
 
         QSqlQuery id_query("SELECT id FROM Pattern ORDER BY id DESC");
