@@ -5,18 +5,17 @@
 
 void Test::init(QString filename)
 {
+    this->clear();
     QFile file(filename);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
         throw "not open file";
 
     QTextStream file_stream(&file);
-    size_t count{file.readLine().toULongLong()};
+    this->count_questions = file.readLine().toULongLong();
 
-
-    for (size_t i = 0; i < count; i++)
+    for (size_t i = 0; i < this->count_questions; i++)
     {
         int type{file_stream.readLine().toInt()};
-        qDebug() << type;
         Question_base* base{};
         switch (type)
         {
@@ -37,8 +36,8 @@ void Test::init(QString filename)
         {
             base->input(file_stream);
             base->set_type(test_type(type));
-            this->questions[i].first = base;
-
+            this->questions.push_back({base, false});
+            this->answers.push_back(false);
         }
     }
 }
@@ -47,7 +46,7 @@ void Test::reset()
 {
     this->current_index = 0;
 
-    for (size_t i = 0; i < 10; i++)
+    for (size_t i = 0; i < this->count_questions; i++)
     {
         this->answers[i] = false;
         this->questions[i].second = false;
@@ -214,4 +213,14 @@ std::array<QString, 4> Test::get_correct_answer4() const
 {
     Installation_of_correspondence* q {dynamic_cast<Installation_of_correspondence*>(this->questions[this->current_index].first)};
     return  q->get_correct_answer();
+}
+
+void Test::clear()
+{
+    for (size_t i = 0; i < this->questions.size(); i++)
+    {
+        delete this->questions[i].first;
+    }
+    this->questions.clear();
+    this->answers.clear();
 }

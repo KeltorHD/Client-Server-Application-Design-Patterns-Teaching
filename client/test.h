@@ -31,6 +31,8 @@ public:
     size_t get_counter_correct_answers() const;
     const size_t& get_current_index() const {return current_index;}
 
+    size_t get_count_questions() const {return count_questions;}
+
     const test_type &get_current_type() const;
     const QString& get_question() const {return this->questions[this->current_index].first->get_question();}
 
@@ -61,9 +63,12 @@ public:
 private:
     size_t current_index{0};
     /*вопрос и его статус: правильно или нет*/
-    std::array<std::pair<Question_base*, bool>, 10> questions{};
+    std::vector<std::pair<Question_base*, bool>> questions{};
     /*есть ли ответ на вопрос*/
-    std::array<bool, 10> answers;
+    std::vector<bool> answers;
+    size_t count_questions;
+
+    void clear();
 };
 
 #endif // TEST_H

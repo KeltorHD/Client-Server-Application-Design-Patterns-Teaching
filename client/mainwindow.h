@@ -132,6 +132,7 @@ private:
     QString file_type;
     QValidator *validator;
     Test_widget* test_widget;
+    int32_t msg_length{-1};
 
     /*для результатов тестов*/
     std::vector<QLabel*> label_test;
@@ -149,8 +150,10 @@ private:
     const quint16 port{20002};
 
     void send(const QString& data);
-    QString recv();
+//    QString recv();
     void create_db();
+
+    void recv_data_handler(const QString& data);
 
     void send_auth(const QString& login, const QString& password);
     void send_test_result(const QString& login, const QString& password);
@@ -176,5 +179,6 @@ private:
     std::vector<result_test_t> get_result_test_info();
     std::vector<QString> get_patterns_name();
     pattern_info_t get_pattern_info(QString name);
+    int get_count_question(QString name);
 };
 #endif // MAINWINDOW_H

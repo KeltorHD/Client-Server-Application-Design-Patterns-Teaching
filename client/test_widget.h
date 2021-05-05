@@ -60,24 +60,29 @@ private slots:
 
     void on_done_clicked();
 
+    void on_back_to_show_clicked();
+
 private:
     Ui::Test_widget *ui;
     QTimer* time_line;
     const int seconds{600};
     Test test;
     /*отображение текста*/
-    QLabel* result;
-    std::array<QLabel*, 10> questions;
-    std::array<QLabel*, 10> results;
-    std::array<QFrame*, 11> lines;
+    QLabel* result{nullptr};
+    std::vector<QLabel*> questions;
+    std::vector<QLabel*> results;
+    std::vector<QFrame*> lines;
+    size_t count_questions;
 
     void enable_buttons(bool enable);
 
     void fill_question();
 
+    void clear();
+
 public:
     std::vector<QPushButton*> back;
-    QPushButton* result_done;
+    QPushButton* result_done{nullptr};
     int count_correct;
     QString pattern;
 };

@@ -323,14 +323,14 @@
            <widget class="QLabel" name="img_profile">
             <property name="minimumSize">
              <size>
-              <width>256</width>
-              <height>256</height>
+              <width>0</width>
+              <height>0</height>
              </size>
             </property>
             <property name="maximumSize">
              <size>
-              <width>256</width>
-              <height>256</height>
+              <width>512</width>
+              <height>512</height>
              </size>
             </property>
             <property name="text">
@@ -340,7 +340,7 @@
              <pixmap resource="res.qrc">:/default.png</pixmap>
             </property>
             <property name="scaledContents">
-             <bool>true</bool>
+             <bool>false</bool>
             </property>
            </widget>
           </item>
@@ -459,8 +459,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>237</width>
-             <height>20</height>
+             <width>254</width>
+             <height>460</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -574,8 +574,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>237</width>
-             <height>395</height>
+             <width>263</width>
+             <height>460</height>
             </rect>
            </property>
            <property name="sizePolicy">
@@ -702,7 +702,7 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>512</width>
+             <width>655</width>
              <height>594</height>
             </rect>
            </property>

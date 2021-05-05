@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>750</width>
+    <width>752</width>
     <height>460</height>
    </rect>
   </property>
@@ -28,7 +28,7 @@
      <item>
       <widget class="QTabWidget" name="tabWidget">
        <property name="currentIndex">
-        <number>2</number>
+        <number>1</number>
        </property>
        <widget class="QWidget" name="info">
         <attribute name="title">
@@ -56,7 +56,7 @@
            <item>
             <widget class="QLabel" name="label">
              <property name="text">
-              <string>Вам предложено пройти тест, состоящий из 10 вопросов. Время на прохождение: 10 минут. По окончании тестирования можно просмотреть свой результат в 3-ей вкладке. Вопросы в тесте могут быть четырех видов: выбор одного ответа из четырех, выбор нескольких ответов из четырех, вписать ответ на вопрос, установить соответствие.</string>
+              <string>Вам предложено пройти тест, состоящий из  вопросов. Время на прохождение: 10 минут. По окончании тестирования можно просмотреть свой результат в 3-ей вкладке. Вопросы в тесте могут быть четырех видов: выбор одного ответа из четырех, выбор нескольких ответов из четырех, вписать ответ на вопрос, установить соответствие.</string>
              </property>
              <property name="alignment">
               <set>Qt::AlignBottom|Qt::AlignHCenter</set>
@@ -160,7 +160,7 @@
          <item>
           <widget class="QStackedWidget" name="type_answers">
            <property name="currentIndex">
-            <number>4</number>
+            <number>0</number>
            </property>
            <widget class="QWidget" name="start_test">
             <layout class="QVBoxLayout" name="verticalLayout_8">
@@ -182,10 +182,13 @@
                <item>
                 <widget class="QLabel" name="label_2">
                  <property name="text">
-                  <string>Вы готовы к тестированию по теме &quot;Программные средства для создания трехмерных игр&quot;? Вам будет дано 10 минут на 10 вопросов.</string>
+                  <string>Вы готовы к тестированию по теме &quot;&quot;? Вам будет дано 10 минут.</string>
                  </property>
                  <property name="alignment">
                   <set>Qt::AlignBottom|Qt::AlignHCenter</set>
+                 </property>
+                 <property name="wordWrap">
+                  <bool>true</bool>
                  </property>
                 </widget>
                </item>
@@ -845,8 +848,8 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>686</width>
-                  <height>376</height>
+                  <width>688</width>
+                  <height>345</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -856,6 +859,30 @@
                 </layout>
                </widget>
               </widget>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_9">
+               <item>
+                <spacer name="horizontalSpacer_13">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+               <item>
+                <widget class="QPushButton" name="back_to_show">
+                 <property name="text">
+                  <string>Назад</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
              </item>
             </layout>
            </widget>

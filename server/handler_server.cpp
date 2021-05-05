@@ -263,6 +263,8 @@ std::string Handler_server::patterns() const
 
 	tinyxml2::XMLPrinter printer;
 	doc.Print(&printer);
+
+	std::cout << std::strlen(printer.CStr()) << std::endl;
 	
 	return printer.CStr();
 }

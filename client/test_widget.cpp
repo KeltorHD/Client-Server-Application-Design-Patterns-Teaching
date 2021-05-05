@@ -16,18 +16,6 @@ Test_widget::Test_widget(QWidget *parent)
     ui->tabWidget->setCurrentIndex(0);
     ui->type_answers->setCurrentIndex(int(state_type::start));
     ui->result_stacked_widget->setCurrentIndex(0);
-
-    /*results*/
-    for (size_t i = 0; i < this->results.size(); i++)
-    {
-        this->questions[i] = new QLabel(this);
-        this->results[i] = new QLabel(this);
-        this->lines[i] = new QFrame();
-        this->lines[i]->setFrameShape(QFrame::HLine);
-    }
-    this->lines[10] = new QFrame();
-    this->lines[10]->setFrameShape(QFrame::HLine);
-    this->result = new QLabel(this);
 }
 
 Test_widget::~Test_widget()
@@ -148,6 +136,24 @@ void Test_widget::fill_question()
     }
 }
 
+void Test_widget::clear()
+{
+    size_t i{};
+    for (i = 0; i < this->questions.size(); i++)
+    {
+        delete this->questions[i];
+        delete this->results[i];
+        delete this->lines[i];
+    }
+    if (i)
+        delete this->lines[i];
+
+    delete this->result;
+    this->questions.clear();
+    this->results.clear();
+    this->lines.clear();
+}
+
 void Test_widget::update_progress_bar()
 {
     if (this->ui->progress_bar->value() >= seconds)
@@ -167,12 +173,30 @@ void Test_widget::update_progress_bar()
 
 void Test_widget::init(QString filename)
 {
+    this->clear();
     this->test.init(filename);
+
+    /*results*/
+    size_t i{};
+    for (i = 0; i < this->test.get_count_questions(); i++)
+    {
+        this->questions.push_back(new QLabel(this));
+        this->results.push_back(new QLabel(this));
+        this->lines.push_back(new QFrame());
+        this->lines[i]->setFrameShape(QFrame::HLine);
+    }
+    this->lines.push_back(new QFrame());
+    this->lines[i]->setFrameShape(QFrame::HLine);
+    this->result = new QLabel(this);
+
     this->ui->progress_bar->setRange(0, seconds);
     this->ui->to_show->setEnabled(false);
     ui->tabWidget->setCurrentIndex(0);
     ui->type_answers->setCurrentIndex(int(state_type::start));
     ui->result_stacked_widget->setCurrentIndex(0);
+
+    this->ui->label->setText("Вам предложено пройти тест, состоящий из " + QString::number(this->test.get_count_questions()) + " вопросов. Время на прохождение: 10 минут. По окончании тестирования можно просмотреть свой результат в 3-ей вкладке. Вопросы в тесте могут быть четырех видов: выбор одного ответа из четырех, выбор нескольких ответов из четырех, вписать ответ на вопрос, установить соответствие.");
+    this->ui->label_2->setText("Вы готовы к тестированию по теме \"" + this->pattern + "\"? Вам будет дано 10 минут.");
 }
 
 void Test_widget::stop_timer()
@@ -192,7 +216,10 @@ void Test_widget::on_start_testing_clicked()
     this->test.reset();
     this->ui->type_answers->setCurrentIndex(int(state_type(int(this->test.get_current_type()))));
     this->fill_question();
-    this->ui->prev_button->setEnabled(false); /*выключенно, потому что назад нельзя*/
+    this->ui->prev_button->setEnabled(false); /*выключено, потому что назад нельзя*/
+
+    if (this->test.get_count_questions() <= 1)
+        this->ui->next_button->setEnabled(false);
 }
 
 void Test_widget::on_to_test_clicked()
@@ -205,7 +232,7 @@ void Test_widget::on_next_button_clicked()
     this->ui->prev_button->setEnabled(true);
     this->test.set_current_index(this->test.get_current_index() + 1);
 
-    if (this->test.get_current_index() == 9)
+    if (this->test.get_current_index() == this->test.get_count_questions() - 1)
         this->ui->next_button->setEnabled(false);
 
     this->ui->type_answers->setCurrentIndex(int(this->test.get_current_type()));
@@ -298,12 +325,14 @@ void Test_widget::on_answer4_clicked()
 void Test_widget::on_to_show_clicked()
 {
     /*заполнение данных о прохождении теста*/
-    this->result->setText("Ваш результат прохождения теста: " + QString::number(this->test.get_counter_correct_answers()) + "/10");
+    this->result->setText("Ваш результат прохождения теста: "
+                            + QString::number(this->test.get_counter_correct_answers()) + "/"
+                            + QString::number(this->test.get_count_questions()));
     this->ui->layout_show->addWidget(this->result);
     this->ui->layout_show->addWidget(this->lines[0]);
 
     this->test.set_current_index(0);
-    for (size_t i = 0; i < 10 ; i++ )
+    for (size_t i = 0; i < this->test.get_count_questions() ; i++ )
     {
         this->questions[i]->setText("Вопрос: " + this->test.get_question());
 
@@ -398,4 +427,9 @@ void Test_widget::on_done_clicked()
     this->ui->type_answers->setCurrentIndex(int(state_type::start));
 
     this->count_correct = this->test.get_counter_correct_answers();
+}
+
+void Test_widget::on_back_to_show_clicked()
+{
+    this->ui->result_stacked_widget->setCurrentIndex(0);
 }

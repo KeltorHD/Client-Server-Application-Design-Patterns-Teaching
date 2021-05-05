@@ -70,11 +70,141 @@ void MainWindow::on_login_2_clicked()
 
 void MainWindow::slotReadyRead()
 {
+    if (this->msg_length == -1)
+    {
+        char buf[sizeof(int32_t)]{0};
+        this->socket->read(buf, sizeof(int32_t));
+
+        int32_t length;
+        std::memcpy(&length, buf, sizeof(int32_t));
+//        qDebug() << "len buf: " <<length;
+
+        this->msg_length = length - 1;
+    }
+
+//    qDebug() << "slot ready read, bytesAvailable: " << this->socket->bytesAvailable();
+
+    if (this->socket->bytesAvailable() >= this->msg_length)
+    {
+        this->msg_length = -1;
+        this->recv_data_handler(this->socket->readAll());
+    }
+
+}
+
+void MainWindow::slotError(QAbstractSocket::SocketError)
+{
+    this->popup->set_title("Произошла ошибка");
+    this->popup->set_description("Ошибка соединения с сервером");
+    this->popup->exec();
+    this->socket->close();
+    socket->connectToHost(this->host, this->port);
+}
+
+void MainWindow::slotConnected()
+{
+    user_info_t info;
+    switch (this->forward)
+    {
+    case (type_forward::login):
+    case (type_forward::registration):
+        this->ui->login_2->setEnabled(true);
+        this->ui->register_2->setEnabled(true);
+        break;
+
+    case (type_forward::load_result):
+        info = this->get_user_info();
+        this->send_auth(info.login, info.password);
+        break;
+
+    case (type_forward::upload_result):
+        info = this->get_user_info();
+        this->send_test_result(info.login, info.password);
+        break;
+
+    case (type_forward::load_patterns):
+        this->send_patterns_request();
+        break;
+    }
+}
+
+void MainWindow::send(const QString &data)
+{
+    int32_t length = int32_t(data.toUtf8().length());
+    length++;
+    char buf[4];
+    std::memcpy(buf, &length, 4);
+    this->socket->write(buf, 4);
+
+    this->socket->write(data.toUtf8());
+}
+
+//QString MainWindow::recv()
+//{
+//    char buf[sizeof(int32_t)]{0};
+//    this->socket->read(buf, sizeof(int32_t));
+
+//    int32_t length;
+//    std::memcpy(&length, buf, sizeof(int32_t));
+//    qDebug() << "len buf: " <<length;
+
+//    length--;
+//    QString data;
+
+//    while (1)
+//    {
+//        data.append(this->socket->readAll());
+//        if (data.size() >= length)
+//            break;
+//    }
+//    qDebug() << data.length();
+
+//    return data;
+//}
+
+void MainWindow::create_db()
+{
+    this->db = QSqlDatabase::addDatabase("QSQLITE");
+    this->db.setDatabaseName(QDir::currentPath() + "/main.db");
+
+    if (!this->db.open())
+    {
+           qDebug() << this->db.lastError().text();
+    }
+    QSqlQuery query;
+    query.exec("CREATE TABLE Pattern (                      "
+                    "id INTEGER NOT NULL UNIQUE PRIMARY KEY AUTOINCREMENT,"
+                    "name VARCHAR(45) NOT NULL UNIQUE,      "
+                    "description TEXT NOT NULL,             "
+                    "code TEXT NOT NULL,                    "
+                    "path_to_image VARCHAR(256) NOT NULL);  ");
+    query.exec("CREATE TABLE Pattern_test (           "
+                    "pattern_name VARCHAR(45) NOT NULL,        "
+                    "question TEXT NOT NULL,                   "
+                    "id_type INTEGER NOT NULL,                 "
+                    "a1 VARCHAR(45) NULL DEFAULT 'NULL',   "
+                    "a2 VARCHAR(45) NULL DEFAULT 'NULL',   "
+                    "a3 VARCHAR(45) NULL DEFAULT 'NULL',   "
+                    "a4 VARCHAR(45) NULL DEFAULT 'NULL',   "
+                    "correct_answer VARCHAR(45) NOT NULL);     " );
+    query.exec("CREATE TABLE User (                              "
+                    "login VARCHAR(45) NOT NULL UNIQUE,          "
+                    "password VARCHAR(45) NOT NULL UNIQUE,       "
+                    "path_to_image VARCHAR(256) NOT NULL UNIQUE);" );
+    query.exec("CREATE TABLE User_test (               "
+                    "pattern VARCHAR(45) NOT NULL UNIQUE,      "
+                    "count_corrent INTEGER NOT NULL);          " );
+}
+
+void MainWindow::recv_data_handler(const QString &data)
+{
     try
     {
         tinyxml2::XMLDocument doc;
-        QString data = this->recv();
+//        QString data = this->recv();
         doc.Parse(data.toUtf8());
+
+//        qDebug() << data.size() << ", " << (doc.FirstChildElement("body") == nullptr);
 
         switch (this->forward)
         {
@@ -117,6 +247,13 @@ void MainWindow::slotReadyRead()
 
         case (type_forward::load_result):
         {
+            if (!data.size())
+            {
+                this->popup->set_title("Успешно");
+                this->popup->set_description("Данные успешно скачаны с сервера! Пройдено тестов: 0");
+                this->popup->exec();
+                break;
+            }
             auto type = doc.FirstChildElement("body")->FirstChildElement("answer");
             if (type->GetText() == QString("correct"))
             {
@@ -189,98 +326,6 @@ void MainWindow::slotReadyRead()
         this->socket->close();
         socket->connectToHost(this->host, this->port);
     }
-}
-
-void MainWindow::slotError(QAbstractSocket::SocketError)
-{
-    this->popup->set_title("Произошла ошибка");
-    this->popup->set_description("Ошибка соединения с сервером");
-    this->popup->exec();
-    this->socket->close();
-    socket->connectToHost(this->host, this->port);
-}
-
-void MainWindow::slotConnected()
-{
-    user_info_t info;
-    switch (this->forward)
-    {
-    case (type_forward::login):
-    case (type_forward::registration):
-        this->ui->login_2->setEnabled(true);
-        this->ui->register_2->setEnabled(true);
-        break;
-
-    case (type_forward::load_result):
-        info = this->get_user_info();
-        this->send_auth(info.login, info.password);
-        break;
-
-    case (type_forward::upload_result):
-        info = this->get_user_info();
-        this->send_test_result(info.login, info.password);
-        break;
-
-    case (type_forward::load_patterns):
-        this->send_patterns_request();
-        break;
-    }
-}
-
-void MainWindow::send(const QString &data)
-{
-    int32_t length = int32_t(data.toUtf8().length());
-    length++;
-    char buf[4];
-    std::memcpy(buf, &length, 4);
-    this->socket->write(buf, 4);
-
-    this->socket->write(data.toUtf8());
-}
-
-QString MainWindow::recv()
-{
-    char buf[sizeof(int32_t)]{0};
-    this->socket->read(buf, sizeof(int32_t));
-
-    int32_t length;
-    std::memcpy(&length, buf, sizeof(int32_t));
-
-    return this->socket->readAll();
-}
-
-void MainWindow::create_db()
-{
-    this->db = QSqlDatabase::addDatabase("QSQLITE");
-    this->db.setDatabaseName(QDir::currentPath() + "/main.db");
-
-    if (!this->db.open())
-    {
-           qDebug() << this->db.lastError().text();
-    }
-    QSqlQuery query;
-    query.exec("CREATE TABLE Pattern (                      "
-                    "id INTEGER NOT NULL UNIQUE PRIMARY KEY AUTOINCREMENT,"
-                    "name VARCHAR(45) NOT NULL UNIQUE,      "
-                    "description TEXT NOT NULL,             "
-                    "code TEXT NOT NULL,                    "
-                    "path_to_image VARCHAR(256) NOT NULL);  ");
-    query.exec("CREATE TABLE Pattern_test (           "
-                    "pattern_name VARCHAR(45) NOT NULL,        "
-                    "question TEXT NOT NULL,                   "
-                    "id_type INTEGER NOT NULL,                 "
-                    "a1 VARCHAR(45) NULL DEFAULT 'NULL',   "
-                    "a2 VARCHAR(45) NULL DEFAULT 'NULL',   "
-                    "a3 VARCHAR(45) NULL DEFAULT 'NULL',   "
-                    "a4 VARCHAR(45) NULL DEFAULT 'NULL',   "
-                    "correct_answer VARCHAR(45) NOT NULL);     " );
-    query.exec("CREATE TABLE User (                              "
-                    "login VARCHAR(45) NOT NULL UNIQUE,          "
-                    "password VARCHAR(45) NOT NULL UNIQUE,       "
-                    "path_to_image VARCHAR(256) NOT NULL UNIQUE);" );
-    query.exec("CREATE TABLE User_test (               "
-                    "pattern VARCHAR(45) NOT NULL UNIQUE,      "
-                    "count_corrent INTEGER NOT NULL);          " );
 }
 
 void MainWindow::send_auth(const QString &login, const QString &password)
@@ -447,6 +492,45 @@ void MainWindow::fill_personal_area()
 
     this->profile_pic = QPixmap();
     this->profile_pic.load(info.path_to_image);
+    int width{this->profile_pic.width()};
+    int height{this->profile_pic.height()};
+    bool is_width{ width >= height };
+    int big{ width >= height ? width : height };
+
+    if (width == height)
+    {
+        this->profile_pic = this->profile_pic.scaled
+        (
+            512,
+            512,
+
+            Qt::IgnoreAspectRatio, Qt::SmoothTransformation
+        );
+    }
+    else if (big > 512)
+    {
+        double ratio {big / 512.0};
+
+        this->profile_pic = this->profile_pic.scaled
+        (
+            is_width ? 512 : int(this->profile_pic.width() / ratio),
+            is_width ? int(this->profile_pic.height() / ratio) : 512,
+
+            Qt::IgnoreAspectRatio, Qt::SmoothTransformation
+        );
+    }
+    else
+    {
+        double ratio {512.0 / big};
+
+        this->profile_pic = this->profile_pic.scaled
+        (
+            is_width ? 512 : int(this->profile_pic.width() * ratio),
+            is_width ? int(this->profile_pic.height() * ratio) : 512,
+
+            Qt::IgnoreAspectRatio, Qt::SmoothTransformation
+        );
+    }
 
     this->ui->img_profile->setPixmap(this->profile_pic);
     this->ui->show_login->setText("Логин: " + info.login);
@@ -568,7 +652,7 @@ void MainWindow::fill_result_test_form()
         this->label_test.push_back(new QLabel(this));
         this->label_test[i]->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
         this->label_test[i]->setWordWrap(true);
-        this->label_test[i]->setText(data[i].name + ": " + data[i].result + "/10");
+        this->label_test[i]->setText(data[i].name + ": " + data[i].result + "/" + QString::number(this->get_count_question(data[i].name)));
         this->ui->result_layout->addWidget(this->label_test[i]);
 
         if (int(i) != int(data.size()) - 1)
@@ -690,6 +774,16 @@ pattern_info_t MainWindow::get_pattern_info(QString name)
     return {query.value(0).toString(), query.value(1).toString(), query.value(2).toString(), query.value(3).toString()};
 }
 
+int MainWindow::get_count_question(QString name)
+{
+    QSqlQuery query;
+    query.exec("SELECT COUNT(*) FROM Pattern_test WHERE pattern_name = '" + name + "'");
+
+    query.next();
+
+    return query.value(0).toInt();
+}
+
 void MainWindow::on_more_btn_clicked(const QString& name)
 {
     this->ui->screen_stacked->setCurrentIndex((int)screen::more_pattern);
@@ -756,8 +850,8 @@ void MainWindow::on_to_test_btn_clicked(const QString &name)
     }
     file.close();
 
-    this->test_widget->init("tmp.txt");
     this->test_widget->pattern = name;
+    this->test_widget->init("tmp.txt");
     QFile::remove("tmp.txt");
     this->ui->screen_stacked->setCurrentIndex((int)screen::test_pattern);
 }
@@ -790,7 +884,10 @@ void MainWindow::on_to_login_clicked()
 void MainWindow::on_register_2_clicked()
 {
     if (!this->ui->reg_login->text().size() || !this->ui->reg_pas->text().size() || !this->base64_file.size())
+    {
+        qDebug() << "not reg";
         return;
+    }
 
     tinyxml2::XMLDocument doc;
     tinyxml2::XMLDeclaration* decl = doc.NewDeclaration("xml version=\"1.1\" encoding=\"UTF-8\"");
@@ -829,9 +926,15 @@ void MainWindow::on_reg_img_clicked()
 {
     QString fileName = QFileDialog::getOpenFileName(this, tr("Open Image"), "", tr("Image Files (*.png *.jpg *.bmp)"));
 
+    qDebug() << "file path: " << fileName;
     std::ifstream file(fileName.toUtf8(), std::ios::in | std::ios::binary);
-    if (!file.is_open())
+    if (!file.is_open())   
+    {
+        this->popup->set_title("Ошибка");
+        this->popup->set_description("Не удается открыть файл!");
+        this->popup->exec();
         return;
+    }
 
     std::vector<uint8_t> data((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 

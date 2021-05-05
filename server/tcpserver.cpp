@@ -204,7 +204,6 @@ const std::string& TCPServer::TCPClient::get_data()
 void TCPServer::TCPClient::send_data(const std::string& text)
 {
     int32_t length = int32_t(text.length());
-    length++;
     char buf[4];
     std::memcpy(buf, &length, 4);
     send(this->S, buf, 4, 0);
