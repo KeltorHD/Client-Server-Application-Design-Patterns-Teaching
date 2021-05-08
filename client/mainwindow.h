@@ -146,8 +146,8 @@ private:
     std::vector<QHBoxLayout*> pattern_laoyut_list;
 
     std::unique_ptr<QTcpSocket> socket;
-    const QString host{"localhost"};
-    const quint16 port{20002};
+    QString host;
+    quint16 port;
 
     void send(const QString& data);
 //    QString recv();

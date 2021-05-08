@@ -2,5 +2,6 @@
     <qresource prefix="/">
         <file>icon.png</file>
         <file>default.png</file>   
+        <file>connection.txt</file>
     </qresource>
 </RCC>

@@ -18,6 +18,16 @@ MainWindow::MainWindow(QWidget *parent)
     this->validator = new QRegularExpressionValidator(QRegularExpression("[A-Za-z0-9_]+"), this);
     this->ui->reg_login->setValidator(this->validator);
     this->ui->reg_pas->setValidator(this->validator);
+    QFile file(":/connection.txt");
+    file.open(QIODevice::ReadOnly | QIODevice::Text);
+    this->host = file.readLine();
+    this->host = this->host.sliced(0, this->host.size() - 1);
+    this->port = file.readLine().toInt();
+
+    QDir dir1(QDir::currentPath());
+    dir1.mkdir("images");
+    QDir dir2(QDir::currentPath() + "/images");
+    dir2.mkdir("patterns");
 
     for (size_t i = 0; i < this->test_widget->back.size(); i++)
     {
