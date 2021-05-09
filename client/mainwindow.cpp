@@ -18,11 +18,21 @@ MainWindow::MainWindow(QWidget *parent)
     this->validator = new QRegularExpressionValidator(QRegularExpression("[A-Za-z0-9_]+"), this);
     this->ui->reg_login->setValidator(this->validator);
     this->ui->reg_pas->setValidator(this->validator);
-    QFile file(":/connection.txt");
+
+    if (!fileExists(QDir::currentPath() + "/connection.txt"))
+    {
+        QFile file("connection.txt");
+        file.open(QIODevice::WriteOnly | QIODevice::Text);
+        file.write("localhost\n");
+        file.write("20002");
+        file.close();
+    }
+    QFile file("connection.txt");
     file.open(QIODevice::ReadOnly | QIODevice::Text);
     this->host = file.readLine();
-    this->host = this->host.sliced(0, this->host.size() - 1);
+    this->host = this->host.simplified();
     this->port = file.readLine().toInt();
+    file.close();
 
     QDir dir1(QDir::currentPath());
     dir1.mkdir("images");
@@ -40,6 +50,7 @@ MainWindow::MainWindow(QWidget *parent)
         this->ui->screen_stacked->setCurrentIndex((int)screen::login);
         this->forward = type_forward::login;
 
+        this->is_auth = false;
         this->socket.reset(new QTcpSocket());
         socket->connectToHost(this->host, this->port);
         connect(socket.get(), SIGNAL(connected()), SLOT(slotConnected()));
@@ -48,6 +59,7 @@ MainWindow::MainWindow(QWidget *parent)
     }
     else
     {
+        this->is_auth = true;
         this->db = QSqlDatabase::addDatabase("QSQLITE");
 
 
@@ -66,6 +78,12 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
+    QFile file("connection.txt");
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+        qDebug() << "not open to write!";
+    file.write(QString(this->host + "\n").toUtf8());
+    file.write(QString::number(this->port).toUtf8());
+    file.close();
     delete ui;
 }
 
@@ -228,6 +246,9 @@ void MainWindow::recv_data_handler(const QString &data)
                 this->create_db();
                 this->fill_db_login(doc.FirstChildElement("body"));
                 this->fill_personal_area();
+                this->is_auth = true;
+
+                this->socket.reset();
             }
             else
             {
@@ -248,6 +269,8 @@ void MainWindow::recv_data_handler(const QString &data)
 
                 this->base64_file = "";
                 this->file_type = "";
+                this->is_auth = true;
+                this->socket.reset();
             }
             else
             {
@@ -258,13 +281,6 @@ void MainWindow::recv_data_handler(const QString &data)
 
         case (type_forward::load_result):
         {
-            if (!data.size())
-            {
-                this->popup->set_title("Успешно");
-                this->popup->set_description("Данные успешно скачаны с сервера! Пройдено тестов: 0");
-                this->popup->exec();
-                break;
-            }
             auto type = doc.FirstChildElement("body")->FirstChildElement("answer");
             if (type->GetText() == QString("correct"))
             {
@@ -274,6 +290,7 @@ void MainWindow::recv_data_handler(const QString &data)
                 this->popup->set_title("Успешно");
                 this->popup->set_description("Данные успешно скачаны с сервера!");
                 this->popup->exec();
+                this->socket.reset();
             }
             else
             {
@@ -292,6 +309,7 @@ void MainWindow::recv_data_handler(const QString &data)
                 this->popup->set_title("Успешно");
                 this->popup->set_description("Данные успешно загружены на сервер!");
                 this->popup->exec();
+                this->socket.reset();
             }
             else
             {
@@ -310,6 +328,7 @@ void MainWindow::recv_data_handler(const QString &data)
             this->popup->set_title("Успешно");
             this->popup->set_description("Список паттернов обновлен!");
             this->popup->exec();
+            this->socket.reset();
             break;
         }
         }
@@ -956,6 +975,7 @@ void MainWindow::on_reg_img_clicked()
 
 void MainWindow::on_quit_clicked()
 {
+    this->is_auth = false;
     this->quit();
 }
 
@@ -1016,4 +1036,44 @@ void MainWindow::on_update_patterns_clicked()
 void MainWindow::on_to_pattern_list_clicked()
 {
     this->ui->screen_stacked->setCurrentIndex((int)screen::patterns);
+}
+
+void MainWindow::on_to_settings_clicked()
+{
+    this->ui->screen_stacked->setCurrentIndex((int)screen::settings);
+
+    this->ui->adress->setText(this->host);
+    this->ui->port->setValue(this->port);
+}
+
+void MainWindow::on_to_back_clicked()
+{
+    this->ui->screen_stacked->setCurrentIndex((int)(this->is_auth?screen::personal_area : screen::login));
+}
+
+void MainWindow::on_settings_save_clicked()
+{
+    this->host = this->ui->adress->text();
+    this->port = this->ui->port->value();
+
+    if (this->socket)
+    {
+        this->ui->login_2->setEnabled(false);
+        this->ui->register_2->setEnabled(false);
+        this->socket.reset(new QTcpSocket());
+        socket->connectToHost(this->host, this->port);
+        connect(socket.get(), SIGNAL(connected()), SLOT(slotConnected()));
+        connect(socket.get(), SIGNAL(readyRead()), SLOT(slotReadyRead()));
+        connect(socket.get(), SIGNAL(errorOccurred(QAbstractSocket::SocketError)), this,  SLOT(slotError(QAbstractSocket::SocketError)));
+    }
+}
+
+void MainWindow::on_to_settings_register_clicked()
+{
+    this->on_to_settings_clicked();
+}
+
+void MainWindow::on_to_settings_login_clicked()
+{
+    this->on_to_settings_clicked();
 }

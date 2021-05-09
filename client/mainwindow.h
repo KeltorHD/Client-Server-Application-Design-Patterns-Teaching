@@ -102,6 +102,16 @@ private slots:
 
     void on_to_pattern_list_clicked();
 
+    void on_to_settings_clicked();
+
+    void on_to_back_clicked();
+
+    void on_settings_save_clicked();
+
+    void on_to_settings_register_clicked();
+
+    void on_to_settings_login_clicked();
+
 private:
     enum class screen
     {
@@ -111,7 +121,8 @@ private:
         patterns = 3,
         result_test = 4,
         more_pattern = 5,
-        test_pattern = 6
+        test_pattern = 6,
+        settings = 7
     };
     enum class type_forward
     {
@@ -148,6 +159,7 @@ private:
     std::unique_ptr<QTcpSocket> socket;
     QString host;
     quint16 port;
+    bool is_auth{true};
 
     void send(const QString& data);
 //    QString recv();
