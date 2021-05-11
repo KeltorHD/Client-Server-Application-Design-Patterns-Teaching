@@ -333,8 +333,8 @@ void MainWindow::recv_data_handler(const QString &data)
         }
         }
 
-
-        this->socket->close();
+        if (this->socket)
+            this->socket->close();
     }
     catch (const char* e)
     {
