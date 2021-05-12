@@ -29,6 +29,24 @@ Libs:
 
 ---
 
+# Server db architecture
+
+![server_bd_arch](/server_db_arch.png)
+
+---
+
+# Client db architecture
+
+![client_bd_arch](/client_db_arch.png)
+
+---
+
+# Use Case Diagram
+
+![use_case](/use_case.png)
+
+---
+
 # ScreenShots
 
 ![screenshot](/screenshots/1.png)
